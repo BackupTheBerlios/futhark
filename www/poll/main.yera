@@ -1,0 +1,43 @@
+-- @author francesco bracchi <frbracch@gmail.com>
+
+upto s = st until st >= 1 and lift0 1
+    where 
+      st = min 1 s;
+    end;
+       
+loc = local (1000 / 15);
+
+ram t = upto (loc / t);
+
+smooth t a b = a + (b - a) * t;
+
+title = "" until uevent.title && pres uevent.title;
+
+question = "" until uevent.question && pres uevent.question;
+    
+end_loading = uevent.end_loading;
+-- end_loading = uevent;
+          
+showQuery q ch res = q until ch and (futr res);
+                     
+pcr = 0 until choice and lift0 (ram 2000);
+pcq = 0 until end_loading and lift0 (ram 1000);
+
+res = result pcr;
+
+qry = query pcq;
+
+show = wait until end_loading and lift3 showQuery (futr qry) (futr choice) (futr res);
+
+
+mainDom = 
+    `<div class = "poll_box">
+    <div class = "title">@title</div>
+    <div class = "question">@question</div>
+    <br/>
+    @show</div>;
+
+main = {
+  domelement: mainDom,
+  choice: choice
+};

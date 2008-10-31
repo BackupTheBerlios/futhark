@@ -1,0 +1,13 @@
+(##namespace
+ ("ehwas-resolver#"
+  not-found-resolver
+  orelse-resolver
+  make-guarded-resolver
+  make-cached-resolver
+  make-filesystem-resolver
+  with-index-resolver
+  with-prefix-resolver
+  make-table-resolver
+  allow
+  deny
+  ))

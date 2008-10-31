@@ -1,0 +1,40 @@
+-- @author: francesco bracchi <frbracch@gmail.com>
+
+upto s = st until st >= 1 and lift0 1
+    where 
+      st = min 1 s;
+    end;
+
+loc = local (1000 / 30);
+
+ram t = upto (loc / t);
+
+smooth t a b = a + (b - a) * t;
+
+btn a c = 
+    `<div 
+    class = "choice" 
+    style = {
+      backgroundColor: rgbToString c
+    }>@a</div>;
+
+outColor = rgb 250 250 250;
+
+overColor = rgb 176 00 244;
+
+buttonOver a c0 = b0 until onexit
+    where
+      col = colorTrans (ram 400) c0 overColor;
+      b0 = btn a col;
+      onexit = (exit b0) and lift2 buttonOut (futr a) (pres col);
+    end;
+
+buttonOut a c0 = b0 until onenter
+    where
+      col = colorTrans (ram 400) c0 outColor;
+      -- col = outColor;
+      b0 = btn a col;
+      onenter = (enter b0) and lift2 buttonOver (futr a) (pres col);
+    end;
+
+button a = buttonOut a outColor;

@@ -1,0 +1,7 @@
+<?scheme ?>
+<html>
+<head><title>Query Test</title></head>
+<body>
+<?scheme (table-for-each (lambda (k v) (echo `(,k "-&gt;" ,v "<br/>"))) (query)) ?>
+</body>
+</html>

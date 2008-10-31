@@ -1,0 +1,47 @@
+-- @author: francesco bracchi <frbracch@gmail.com>
+
+newResult = uevent.newResult;
+
+changeResult = uevent.changeResult;
+
+situation r = r until changeResult and changeResult.name == r.name and lift1 situation (pres changeResult);
+
+makeDiv as = {
+  namespace: xmlns,
+  nodetype: "div",
+  attributes: [],
+  childs: as
+};
+
+totl n = n until newResult and lift2 tt (pres newResult) (futr n)
+    where
+      tt x y = 
+          let x1 = situation x in totl (x1.votes + y);
+    end;
+
+total = totl 0;
+
+showBar name perc votes = 
+    `<div class = "percent">
+    @(progressbar perc)
+    <div style = "display:inline">@name: @perc % (@votes@" "votes)</div>
+    </div>;
+           
+st p t s ss = sits p t ss1
+    where
+      s1 = situation s;
+      v1 = s1.votes * p;
+      p1 = round (v1 / t * 100);
+      s2 = showBar s1.name p1 (round v1);
+      ss1 = concat ss [s2];
+    end;
+
+sits p t ss = ss until newResult and lift4 st (futr p) (futr t) (pres newResult) (futr ss);
+                            
+situations p = sits p total [];
+          
+result p = `<div style = {opacity: p}>
+       @(makeDiv (situations p))
+        <br/>
+       <div class = "total">(total: @(round (p * total)))</div>
+       </div>;

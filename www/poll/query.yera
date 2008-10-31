@@ -1,0 +1,36 @@
+-- @author: francesco bracchi <frbracch@gmail.com>
+newChoice = uevent.choice;
+
+-- as a recursive pattern create some sort of combinator.
+accum s = s until new
+    where
+      new = newChoice and lift2 accumulate (pres newChoice) (futr s);
+      accumulate n s0 = accum s1
+          where
+            btn = button n;
+            s1 = {
+              available: concat (s0.available) [btn],
+              choice: (s0.choice) or (lbc over btn and n)
+            };
+          end;
+    end;
+
+choices = accum {
+            available: [],
+            choice: false
+};
+
+available = choices.available;
+
+choice = choices.choice;
+
+makeDiv p as = {
+  namespace: xmlns,
+  nodetype: "div",
+  attributes: [{namespace: "",
+                name: "style",
+                value: {opacity: p}}],
+  childs: as
+};
+
+query p = makeDiv p available;

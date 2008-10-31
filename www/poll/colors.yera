@@ -1,0 +1,20 @@
+rgb r g b = {
+  red: r,
+  green: g,
+  blue: b
+};
+
+
+
+colorTrans t x y = rgb r g b
+    where
+      trans u v = u + (v - u) * t;
+      r = trans x.red y.red;
+      g = trans x.green y.green;
+      b = trans x.blue y.blue;
+    end;
+
+rgbToString c = 
+    "rgb(" + (round c.red) + "," + 
+    (round c.green) + "," + 
+    (round c.blue) + ")";

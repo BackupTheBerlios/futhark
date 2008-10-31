@@ -1,0 +1,11 @@
+<?scheme
+(include "imp.scm")
+?>
+
+<html>
+<head>
+</head>
+<h1>Test (ehwas-import file)</h1>
+<p><?scheme (echo imp) ?></p>
+<p>from <a href = "imp.scm">imp.scm</a></p>
+</html>

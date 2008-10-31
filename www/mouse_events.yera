@@ -1,0 +1,34 @@
+-- files "mouse_events@.yera";
+infix left 4 relative;
+
+mouseclick = event "click";
+
+mouseout = event "mouseout";
+
+mouseover = event "mouseover";
+
+mousemove = event "mousemove";
+
+lbc = mouseclick && mouseclick.button == 0 && mouseclick;
+mbc = mouseclick && mouseclick.button == 1 && mouseclick;
+rbc = mouseclick && mouseclick.button == 2 && mouseclick;
+
+over x y = x && (x.target relative y);
+out x y = ! (x over y);
+
+overrel x y = x && (x.relatedTarget relative y);
+
+outrel x y = ! (x overrel y);
+
+infix right 6 bin;
+
+bin x y = 
+    (x over y) &&
+    (x outrel y) &&
+    x;
+
+enter x = mouseover bin x;
+
+exit x = mouseout bin x;
+
+move = mousemove;

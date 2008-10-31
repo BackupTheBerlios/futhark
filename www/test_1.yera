@@ -1,0 +1,114 @@
+files "prelude.yera";
+
+Test = 
+struct : (main) ->
+
+open YeraCore, YeraDom, YeraMath, XmlnsXLink, XmlnsSvg;
+open YeraUtils, MouseEvents;
+
+files "yera_utils@.yera", "mouse_events@.yera";
+
+local t = 0 until lift2 (\ t t0 -> t - t0) (futr t) (pres t);
+
+lt = local (time (1000 / 30));
+          
+upto s = st until st >= 1 and pres st
+    where 
+      st = min 1 s;
+    end;
+
+ram tau = upto (lt / tau);
+
+flipFlop t2 _f _g = ff
+    where
+      f x = {
+        image: (_f x), 
+        state: 1
+      };
+      g x = {
+        image: (_g x), 
+        state: 0
+      };
+
+      p = ram t2;
+
+      fc = f 1;
+      fg = g 1;
+
+      ff = fc until (lbc over fc.image) && lift0 f_down;
+      gg = fg until (lbc over fg.image) && lift0 g_down;
+
+      f_down = f (1 - p) until p == 1 && lift0 g_up;
+      g_down = g (1 - p) until p == 1 && lift0 f_up;
+
+      f_up = f p until p == 1 && lift0 ff;
+      g_up = g p until p == 1 && lift0 gg;
+    
+    end;
+
+-- flipFlop t2 f g = gg
+--     where
+--       p = ram t2;
+--       cf = f 1;
+--       cg = g 1;
+
+--       ff = cf until ("click" over cf) && lift0 f_go_down;
+--       gg = cg until ("click" over cg) && lift0 g_go_down;
+           
+--       f_go_down = f (1 - p) until p == 1 && lift0 g_go_up;
+--       g_go_down = g (1 - p) until p == 1 && lift0 f_go_up;
+
+--       f_go_up = f p until p == 1 && lift0 ff;
+--       g_go_up = g p until p == 1 && lift0 gg;
+--     end;
+
+square color param = 
+    `<rect x = d y = d width = l height = l fill = color transform = tr stroke = "black" style = "stroke-width:1pt" rx = 2 ry = 2 />
+    where
+      d = 10 - 8 * param;
+      l = 16 * param;
+      rot = param * 180;
+      tr = "rotate (" + rot  + " 10 10)";
+    end;
+
+heart color param = 
+    `<image xlink:href = (color + ".png")
+          x = d 
+          y = d 
+          width = l 
+          height = l
+          transform = tr />
+    where
+      d = 10 - 8 * param;
+      l = 16 * param;
+      rot = (1 - param) * 180;
+      tr = "rotate (" + rot  + " 10 10)";
+    end;
+    
+ff t2 = flipFlop t2 (heart "Yellow") (heart "Blue");
+
+f0 = ff 500;
+f1 = ff 500;
+f2 = ff 500;
+f3 = ff 500;
+-- f4 = ff 500;
+
+if a b c = (a && [b] || [c]) ! 0;
+
+subj = if (f0.state) "I " "You ";
+nv = if (f1.state) "" "do not ";
+verb = if (f2.state) "love " "hate ";
+obj =  if (f3.state) "you" "me";
+
+-- ft = "" + f0.state + f1.state + f2.state + f3.state + f4.state;
+ft = subj + nv + verb + obj;
+
+main = `<g transform = "scale (3)"> 
+       @(f0.image)
+       <g transform = "translate(20 0)">@(f1.image)</g>
+       <g transform = "translate(40 0)">@(f2.image)</g>
+       <g transform = "translate(60 0)">@(f3.image)</g>
+       <text x = 1 y = 30 style = "font-size:6pt">$ft</text>
+       </g>
+
+end;

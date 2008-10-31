@@ -1,0 +1,11 @@
+<?scheme (header-set! "Content-type" "text/html") ?>
+<html>
+<head>
+</head>
+<body>
+<h1>query:</h1>
+<br/>
+<div>textvalue:<pre><?scheme(echo (query-ref "textvalue"))?></pre></div>
+<div>filevalue:<pre><?scheme(echo (query-ref "filevalue"))?></pre></div>
+</body>
+</html>

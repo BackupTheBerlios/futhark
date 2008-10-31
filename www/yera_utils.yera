@@ -1,0 +1,23 @@
+-- Some useful functions
+-- @author Francesco Bracchi
+-- @email frbracch@gmail.com
+
+switch i e = i until e && lift2 switch (pres e) (futr e);
+
+of f a = f a;
+
+id x = x;
+
+if c l r = (c && [l] || [r]) ! 0;
+
+imp s = s until lift0 null;
+
+local d = 0 until lift2 (\t t0 -> t - t0) (futr t) (pres t)
+    where
+      t = time d;
+    end;
+
+step i e = i until e && lift2 step b (futr b);
+
+then b f = b and lift1 f (pres b);
+

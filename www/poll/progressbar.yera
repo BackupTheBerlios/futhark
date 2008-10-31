@@ -1,0 +1,6 @@
+-- @author: francesco bracchi <frbracch@gmail.com>
+
+progressbar pc = 
+    `<div class = "bar_box" style = {textAlign: "left"}>
+    <div class = "bar" style = {width: pc + "%"}/>
+    </div>;

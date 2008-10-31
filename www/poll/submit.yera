@@ -1,0 +1,13 @@
+
+title = "" until uevent.title;
+
+question = "" until uevent.question;
+
+opts = [] until uevent.options;
+
+fn s = _`<div>@s</div>;
+
+main = `<div>
+       @(map fn opts)
+       </div>;
+                    

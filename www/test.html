@@ -1,0 +1,21 @@
+<?xml version = "1.0" ?>
+
+<html xmlns = "http://www.w3.org/1999/xhtml">
+  <head>
+    <script type = "text/ecmascript" src = "/gebo/rts.js"></script>
+    <script type = "text/ecmascript" src = "/yera/rts.js"></script>
+    <script type = "text/ecmascript" src = "test.yera"></script>
+    <script type = "text/ecmascript">
+    onload = function () {
+    Yera.connect ('Test.main', 'main')
+    }
+    </script>
+  </head>
+  <body>
+    <div>
+    <form><input type = "button" name = "ciao" value = "ciao" onclick = "userevent.fire ('ciao')"/></form>
+    </div>
+    <div id = "main"/>
+
+  </body>
+</html>

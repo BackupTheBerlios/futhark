@@ -1,0 +1,9 @@
+(##namespace
+ ("ehwas-server#"
+  make-server
+  start!
+  stop!
+  server-host
+  server-port
+  server-resolver
+  server-resolver-set!))

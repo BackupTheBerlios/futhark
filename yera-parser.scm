@@ -1,0 +1,799 @@
+(##namespace ("yera-parser#"))
+
+(##include "~~/lib/gambit#.scm")
+
+(include "ansuz-streams#.scm")
+(include "ansuz-language#.scm")
+(include "ansuz-kernel#.scm")
+(include "ansuz-expressions#.scm")
+(include "ansuz-extras#.scm")
+
+(include "yera-compile#.scm")
+
+(declare (standard-bindings)
+         (extended-bindings)
+         (block)
+         (not safe))
+
+(define-structure bindings assignments operator-table)
+
+(define integer-digit
+  (let(
+       (i0 (char->integer #\0)))
+    (parser ()
+            (>> (<- c (digit))
+                (return (- (char->integer c) i0))))))
+
+(define (list->integer ds)
+  (let list->integer ((ds ds) (v 0))
+    (if (null? ds) v
+        (list->integer (cdr ds) (+ (* 10 v) (car ds))))))
+
+(define (list->fractional ds)
+  (/ (let list->fractional ((ds (reverse ds)) (v 0))
+       (if (null? ds) v
+           (list->fractional (cdr ds) (+ (/ v 10) (car ds)))))
+     10))
+
+(define *yera-keywords* (make-table init: #f))
+
+(define-macro (set-kw . ks)
+  `(begin ,@(map (lambda (k) `(table-set! *yera-keywords* ',k #t)) ks)))
+
+(set-kw
+ let
+ in
+ where
+ true
+ false
+ null
+ end
+ struct
+ interface
+ open
+ files
+ export
+ infix
+ prefix
+ postfix
+ yera
+ javascript
+ ->
+ :
+ |\\|
+ publish
+ subscribe)
+  
+(define (yera-keyword? s)
+  (table-ref *yera-keywords* s))
+
+(define (symbol-append a b)
+  (string->symbol
+   (string-append
+    (symbol->string a)
+    (symbol->string b))))
+
+(define (make-unary-parser y)
+  (let(
+       (t (symbol->string y)))
+    (parser ()
+            (>> (whitespace) (yera-space)
+                (word t)
+                (>> (whitespace) (yera-space))
+                (return (lambda (x) `(,y ,x)))))))
+
+(define (make-builtin-unary-parser y)
+  (let(
+       (t (symbol->string y)))
+    (parser ()
+            (>> (yera-space)
+                (word t)
+                (>> (whitespace) (yera-space))
+                (return (lambda (x) `(,y ,x)))))))
+
+(define (make-binary-parser y)
+  (let(
+       (t (symbol->string y)))
+    (parser ()
+            (>> (whitespace) (yera-space)
+                (word t)
+                (whitespace) (yera-space)
+                (return (lambda (x z) `((,y ,x) ,z)))))))
+
+(define (make-builtin-binary-parser y)
+  (let(
+       (t (symbol->string y)))
+    (parser ()
+            (>> (yera-space)
+                (word t)
+                (yera-space)
+                (return (lambda (x z) `((,y ,x) ,z)))))))
+
+(define-parser (nonempty-list p)
+  (>> (<- s (p))
+      (yera-space)
+      (<- ss (kleene
+              (parser ()
+               (>> (char #\,)
+                   (yera-space)
+                   (<- s (p))
+                   (yera-space)
+                   (return s)))))
+      (return (cons s ss))))
+
+(define-parser (list-of o p c)
+  (>> (word o)
+      (yera-space)
+      (<- i (<> (nonempty-list p)
+                (return '())))
+      (yera-space)
+      (word c)
+      (return i)))
+
+(define-parser (yera-integer)
+  (>> (<- d (integer-digit))
+      (<- ds (kleene integer-digit))
+      (return (list->integer (cons d ds)))))
+
+(define-parser (yera-fractional)
+  (>> (char #\.)
+      (<- ds (kleene integer-digit))
+      (return (list->fractional ds))))
+
+(define-parser (sign)
+  (<> (>> (char #\+) (return (lambda (n) n)))
+      (>> (char #\-) (return (lambda (n) (- n))))
+      (return (lambda (n) n))))
+
+(define-parser (power-of-ten)
+  (>> (<> (char #\e) (char #\E))
+      (<- s (sign))
+      (<- i (yera-integer))
+      (return (s i))))
+       
+(define-parser (yera-number)
+  (>> (<- s (sign))
+      (<- ip (yera-integer))
+      (<- fp (<> (yera-fractional) (return 0)))
+      (<- ex (<> (power-of-ten) (return 0)))
+      (return (s (exact->inexact (* (+ ip fp) (expt 10 ex)))))))
+
+(define-parser (yera-symbol)
+  (>> (<- c (<> (alpha) (char #\_)))
+      (<- cs (kleene (parser () (<> (alpha) (digit) (char #\_)))))
+      (let(
+           (sym
+            (string->symbol
+             (list->string
+              (cons c cs)))))
+        (if (yera-keyword? sym)
+            (fail "symbol expected, keyword found")
+            (return sym)))))
+
+(define-parser (yera-string)
+  (>> (char #\")
+      (<- s (kleene yera-string-char))
+      (char #\")
+      (return (list->string s))))
+
+(define-parser (yera-string-char)
+  (<> (>> (char #\\) (any))
+      (test-token (lambda (c)
+                    (not (or (char=? c #\")
+                             (char=? c #\nul)))))))
+
+(define-parser (yera-js)
+  (>> (char #\')
+      (<- s (kleene yera-js-char))
+      (char #\')
+      (return `(javascript ,(list->string s)))))
+
+(define-parser (yera-js-char)
+  (<> (>> (char #\\) (any))
+      (test-token (lambda (c)
+                    (not (or (char=? c #\')
+                             (char=? c #\nul)))))))
+
+(define-parser (yera-true)
+  (>> (word "true") (return 'true)))
+
+(define-parser (yera-false)
+  (>> (word "false") (return 'false)))
+
+(define-parser (yera-null)
+  (>> (word "null") (return 'null)))
+
+(define-parser (yera-comment)
+  (>> (word "--")
+      (consume-comment)))
+
+(define-parser (consume-comment)
+  (<> (char #\newline)
+      (eos)
+      (>> (any) (consume-comment))))
+
+(define-parser (yera-space)
+  (<> (>> (<> (whitespace) (yera-comment)) (yera-space))
+      (return #\space)))
+
+(define-parser (yera-array pwd ot)
+  (>> (<- s (list-of "[" (parser () (yera-expression pwd ot)) "]"))
+      (return (if (null? s)
+                  `(lift0 (arr))
+                  `(lift-array (arr ,@s))))))
+
+(define-parser (yera-object pwd ot)
+  (>> (<- ps (list-of "{" (parser () (yera-object-pair pwd ot)) "}"))
+      (return (if (null? ps)
+                  `(lift0 (obj))
+                  `(lift-object (obj ,@ps))))))
+
+(define-parser (yera-array-flat pwd ot)
+  (>> (<- s (list-of "_[" (parser () (yera-expression pwd ot)) "]"))
+      (return `(arr ,@s))))
+
+(define-parser (yera-object-flat pwd ot)
+  (>> (<- ps (list-of "_{" (parser () (yera-object-pair pwd ot)) "}"))
+      (return `(obj ,@ps))))
+
+(define-parser (yera-object-key)
+  (<> (yera-number)
+      (yera-string)
+      (yera-symbol)))
+
+(define-parser (yera-object-pair pwd ot)
+  (>> (<- k (yera-object-key))
+      (yera-space)
+      (char #\:)
+      (yera-space)
+      (<- v (yera-expression pwd ot))
+      (return (list k v))))
+  
+(define-parser (yera-function pwd ot)
+  (>> (char #\\)
+      (yera-space)
+      (<- a (yera-symbol))
+      (<- as (kleene (parser () (>> (yera-space) (yera-symbol)))))
+      (yera-space)
+      (word "->")
+      (yera-space)
+      (<- e (yera-expression pwd ot))
+      (return
+       (let loop ((as (cons a as)))
+         (if (null? as) e
+             `(lambda ,(car as)
+                ,(loop (cdr as))))))))
+
+(define-parser (yera-let pwd ot)
+  (>> (word "let")
+      (yera-space)
+      (<- bs (yera-bindings pwd ot))
+      (yera-space)
+      (word "in")
+      (yera-space)
+      (<- e (yera-expression pwd (bindings-operator-table bs)))
+      (return `(let ,(bindings-assignments bs) ,e))))
+
+(define-parser (yera-where pwd ot)
+  (>> (word "where")
+      (yera-space)
+      (<- bs (yera-bindings pwd ot))
+      (yera-space)
+      (word "end")
+      (return (bindings-assignments bs))))
+
+(define-parser (function-assignment pwd ot)
+  (>> (<- a (yera-symbol))
+      (<- as (kleene (parser () (>> (yera-space) (yera-symbol)))))
+      (yera-space)
+      (char #\=)
+      (yera-space)
+      (<- e (yera-expression pwd ot))
+      (yera-space)
+      (<> (>> (<- bs (yera-where pwd ot))
+              (return
+               (let loop ((as (cons a as)))
+                 (if (null? as) `(let ,bs ,e)
+                     `(lambda ,(car as)
+                        ,(loop (cdr as)))))))
+          (return
+           (let loop ((as (cons a as)))
+             (if (null? as) e
+                 `(lambda ,(car as)
+                    ,(loop (cdr as)))))))))
+
+(define-parser (value-assignment pwd ot)
+  (>> (char #\=)
+      (yera-space)
+      (<- e (yera-expression pwd ot))
+      (yera-space)
+      (<> (>> (<- bs (yera-where pwd ot))
+              (return `(let ,bs ,e)))
+          (return e))))
+       
+(define-parser (yera-assignment pwd ot)  
+  (>> (<- s (yera-symbol))
+      (yera-space)
+      (<- v (<> (value-assignment pwd ot)
+                (function-assignment pwd ot)))
+      (return
+       (make-bindings
+        (list (list s v))
+        ot))))
+
+(define-parser (yera-prefix-declaration ot)
+  (>> (word "prefix")
+      (yera-space)
+      (<- p (yera-integer))
+      (yera-space)
+      (<- k (yera-symbol))
+      (yera-space)
+      (return
+       (make-bindings
+        '()
+        (operator-table-add-prefix
+         ot
+         (list (make-unary-parser k) p 'none k))))))
+
+(define-parser (yera-infix-declaration ot)
+  (>> (word "infix")
+      (yera-space)
+      (<- s (<> (>> (word "left") (return 'left))
+                (>> (word "right") (return 'right))))
+      (yera-space)
+      (<- p (yera-integer))
+      (yera-space)
+      (<- k (yera-symbol))
+      (yera-space)
+      (return
+       (make-bindings
+        '()
+        (operator-table-add-infix
+         ot
+         (list (make-binary-parser k) p s k))))))
+
+(define-parser (yera-postfix-declaration ot)
+  (>> (word "postfix")
+      (yera-space)
+      (<- p (yera-integer))
+      (yera-space)
+      (<- k (yera-symbol))
+      (yera-space)
+      (return
+       (make-bindings
+        '()
+        (operator-table-add-postfix
+         ot
+         (list (make-unary-parser k) p 'none k))))))
+  
+(define-parser (precedence-declaration ot)
+  (<> (yera-prefix-declaration ot)
+      (yera-infix-declaration ot)
+      (yera-postfix-declaration ot)))
+
+(define-parser (files-inclusion pwd ot)
+  (>> (word "files")
+      (whitespace)
+      (yera-space)
+      (<- s (yera-string))
+      (<- ss (kleene
+              (parser ()
+                      (>> (yera-space)
+                          (char #\,)
+                          (yera-space)
+                          (yera-string)))))
+      (return
+       (let loop ((ss (cons s ss)) (bs (make-bindings '() ot)))
+         (if (null? ss) bs
+             (loop (cdr ss)
+                   (let(
+                        (f1 (string-append pwd (car ss))))
+                     (call-with-input-file f1
+                       (lambda (p)
+                         (let(
+                              (b1 (run (yera-file (path-directory f1) (bindings-operator-table bs))
+                                       (port->stream p)
+                                       (lambda (r)
+                                         (raise
+                                          (make-parser-exception
+                                           (string-append
+                                            (parser-exception-reason r) " in " (car ss) " @("
+                                            (number->string (input-port-line p)) ","
+                                            (number->string (input-port-column p))  ")")))))))
+                           (make-bindings
+                            (append (bindings-assignments bs) (bindings-assignments b1))
+                            (bindings-operator-table b1))))))))))))
+
+(define-parser (struct-expression pwd ot)
+  (yera-expression pwd ot))
+
+(define-parser (structs-opening pwd ot)
+  (>> (word "open")
+      (whitespace)
+      (yera-space)
+      (<- s (struct-expression pwd ot))
+      (<- ss (kleene (parser () (>> (yera-space)
+                                    (char #\,)
+                                    (yera-space)
+                                    (struct-expression pwd ot)))))
+      (return (make-bindings (map (lambda (s) `(open ,s)) (cons s ss)) ot))))
+
+(define-parser (yera-line pwd ot)
+  (<> (files-inclusion pwd ot)
+      (structs-opening pwd ot)
+      (precedence-declaration ot)
+      (yera-assignment pwd ot)))
+
+(define-parser (yera-bindings pwd ot)
+  (<> (nonempty-bindings pwd ot)
+      (return (make-bindings '() ot))))
+
+(define-parser (nonempty-bindings pwd ot)
+  (>> (<- l (yera-line pwd ot))
+      (<> (>> (yera-space)
+              (maybe (parser () (>> (char #\;) (yera-space))))
+              (<- ls (yera-bindings pwd (bindings-operator-table l)))
+              (return
+               (make-bindings
+                (append (bindings-assignments l)
+                        (bindings-assignments ls))
+                (bindings-operator-table ls))))
+          (return l))))
+
+(define-parser (yera-parenthesis pwd ot)
+  (>> (char #\()
+      (yera-space)
+      (<- e (yera-expression pwd ot))
+      (yera-space)
+      (char #\))
+      (return e)))
+
+(define-parser (pchar)
+  (<> (>> (whitespace) (yera-space))
+      (>> (char #\\) (any))
+      (test-token
+       (lambda (t)
+         (not (or (char=? t #\>)
+                  (char=? t #\<)
+                  (char=? t #\@)
+                  (char=? t #\$)
+                  (char=? t #\nul)))))))
+
+(define-parser (xml-name)
+  (>> (<- s (yera-symbol))
+      (<> (>> (char #\:)
+              (<- t (yera-symbol))
+              (return (list s t)))
+          (return (list '() s)))))
+
+(define-parser (xml-attribute pwd ot)
+  (>> (<- k (xml-name))
+      (yera-space)
+      (char #\=)
+      (yera-space)
+      (<- v (yera-term pwd ot))
+      (return`(attr ,(car k)
+                    ,(cadr k)
+                    ,v))))
+
+(define-parser (xml-attributes pwd ot)
+  (<> (>> (<- a (xml-attribute pwd ot))
+          (yera-space)
+          (<- as (xml-attributes pwd ot))
+          (return (cons a as)))
+      (return '())))
+
+(define (split-attributes/namespaces as)
+  (if (null? as) (values '() '())
+      (let(
+           (a (car as)))
+        (receive (xs ns) (split-attributes/namespaces (cdr as))
+          (if (or (eq? 'xmlns (cadr a))
+                    (eq? 'xmlns (caddr a)))
+              (values xs (cons a ns))
+              (values (cons a xs) ns))))))
+
+(define (stringify-attributes as)
+  (map (lambda (a)
+         (let(
+              (ns  (if (null? (cadr a)) `(lift0 "") (symbol-append 'xmlns_ (cadr a)))))
+           `(lift-object
+             (obj (namespace ,ns)
+                  (name (lift0 ,(symbol->string (caddr a))))
+                  (value ,(cadddr a))))))
+       as))
+
+(define (namespace-bindings bs)
+  (map (lambda (n)
+         (if (eq? (cadr n) 'xmlns)
+             (list (symbol-append 'xmlns_ (cadddr n)))
+             (list 'xmlns (cadddr n))))
+       bs))
+  
+(define-parser (xml-node pwd ot)
+  (>> (char #\<)
+      (<- n (xml-name))
+      (yera-space)
+      (<- xs (xml-attributes pwd ot))
+      (yera-space)
+      (let*(
+            (as '())
+            (bs '())
+            (_ (receive (as0 ns0) (split-attributes/namespaces xs)
+                 (set! as (stringify-attributes as0))
+                 (set! bs (namespace-bindings ns0))))
+            (ns (if (null? (car n)) 'xmlns (symbol-append 'xmlns_ (car n)))))
+        (<>
+         (>> (word "/>") (return
+                          `(let ,bs
+                             (lift-object
+                              (obj (namespace ,ns)
+                                   (nodetype (lift0 ,(symbol->string (cadr n))))
+                                   (attributes (lift-array (arr ,@as)))
+                                   (childs (lift0 (arr))))))))
+         (>> (char #\>)
+             (yera-space)
+             (<- es (xml-childs pwd ot n))
+             (return
+              `(let ,bs
+                 (lift-object
+                  (obj (namespace ,ns)
+                       (nodetype (lift0 ,(symbol->string (cadr n))))
+                       (attributes (lift-array (arr ,@as)))
+                       (childs (lift-array (arr ,@es))))))))))))
+
+(define-parser (xml-close t)
+  (>> (word "</")
+      (<- w (xml-name))
+      (yera-space)
+      (word ">")
+      (if (and (eq? (car w) (car t))
+               (eq? (cadr w) (cadr t)))
+          (return '())
+          (fail "xml-close"))))
+
+(define-parser (xml-text)
+  (>> (<- c (pchar))
+      (<- cs (kleene pchar))
+      (return (list->string (cons c cs)))))
+
+(define-parser (xml-unquote pwd ot)
+  (<> (xml-unquote-node pwd ot)
+      (xml-unquote-value pwd ot)))
+
+(define-parser (xml-unquote-node pwd ot)
+  (>> (char #\@)
+      (yera-term pwd ot)))
+
+(define-parser (xml-unquote-value pwd ot)
+  (>> (char #\$)
+      (<- s (yera-term pwd ot))
+      (return s)))
+
+(define-parser (xml-childs pwd ot t)
+  (<> (>> (<- c (xml-unquote pwd ot))
+          (yera-space)
+          (<- cs (xml-childs pwd ot t))
+          (return (cons c cs)))
+      (>> (<- c (xml-node pwd ot))
+          (yera-space)
+          (<- cs (xml-childs pwd ot t))
+          (return (cons c cs)))
+      (>> (<- c (xml-text))
+          (<- cs (xml-childs pwd ot t))
+          (return (cons `(lift0 ,c) cs)))
+      (xml-close t)))
+
+(define-parser (yera-quasiquote pwd ot)
+  (>> (char #\`)
+      (yera-space)
+      (xml-node pwd ot)))
+
+(define-parser (yera-quasiquote-flat pwd ot)
+  (>> (char #\_) (char #\`)
+      (yera-space)
+      (<- n (xml-node pwd ot))
+      (return (unlift n))))
+
+(define (unlift n)
+  (cond
+   ((not (pair? n)) n)
+   ((eq? (car n) 'lift-object) (unlift (cadr n)))
+   ((eq? (car n) 'lift-array) (unlift (cadr n)))
+   ((eq? (car n) 'lift0) (unlift (cadr n)))
+   (else
+    (cons
+     (unlift (car n))
+     (unlift (cdr n))))))
+   
+
+(define-parser (yera-constant)
+  (>> (<- c (<> (yera-true)
+                (yera-false)
+                (yera-null)
+                (yera-number)
+                (yera-string)))
+      (return `(lift0 ,c))))
+
+(define-parser (yera-constant-flat)
+  (>> (char #\_)
+      (<- c (<> (yera-true)
+                (yera-false)
+                (yera-null)
+                (yera-number)
+                (yera-string)))
+      (return c)))
+      
+(define-parser (yera-term pwd ot)
+  (<> (yera-parenthesis pwd ot)
+      (yera-let pwd ot)
+      (yera-function pwd ot)
+      
+      (yera-array-flat pwd ot)
+      (yera-object-flat pwd ot)
+      (yera-array pwd ot)
+      (yera-object pwd ot)
+      
+      (yera-struct pwd ot)
+      (yera-interface ot)
+      
+      (yera-quasiquote-flat pwd ot)
+      (yera-quasiquote pwd ot)
+      
+      (yera-js)
+      (yera-constant-flat)
+      (yera-constant)
+      (yera-symbol)))
+
+(define-parser (yera-expression pwd ot)
+  (expr ot (parser () (yera-term pwd ot))))
+
+ (define (yera->sexp s)
+   (run (yera-expression *-operator-table-*) (string->stream s)))
+
+(define-parser (object-ref)
+  (>> (yera-space)
+      (char #\.)
+      (yera-space)
+      (<- s (yera-symbol))
+      (return (lambda (e) `((ref ,e) (lift0 ,(symbol->string s)))))))
+
+(define-parser (array-ref)
+  (>> (yera-space)
+      (char #\!)
+      (yera-space)
+      (return (lambda (e s) `((ref ,e) ,s)))))
+
+(define-parser (negate)
+  (>> (yera-space)
+      (char #\-)
+      (yera-space)
+      (return (lambda (e) `(negate ,e)))))
+
+(define-parser (function-application)
+  (>> (whitespace) (yera-space)
+      (return list)))
+
+
+(define *-operator-table-*
+  (let(
+       (pre `((,(make-unary-parser 'not) 8 none not)
+              (,(make-builtin-unary-parser '!) 8 none !)
+              (,(make-unary-parser 'futr) 5 none futr)
+              (,(make-unary-parser 'pres) 5 none pres)
+              (,negate 8 none -)))
+       (in  `((,(make-binary-parser 'until) 1 right until)
+              (,(make-binary-parser 'untilI) 1 right untilI)
+              (,(make-binary-parser 'or) 3 right or)
+              (,(make-binary-parser 'and) 5 right and)
+              (,(make-builtin-binary-parser '&&) 5 right &&)
+              (,(make-builtin-binary-parser '|\|\||) 3 right |\|\||)
+              (,(make-builtin-binary-parser '==) 7 left ==)
+              (,(make-builtin-binary-parser '!=) 7 left !=)   
+              (,(make-builtin-binary-parser '>=) 7 left >=)
+              (,(make-builtin-binary-parser '<=) 7 left <=)
+              (,(make-builtin-binary-parser '>) 7 left  >)
+              (,(make-builtin-binary-parser '<) 7 left  <)
+              (,(make-builtin-binary-parser '+) 7 left  +)
+              (,(make-builtin-binary-parser '-) 7 left  -)
+              (,(make-builtin-binary-parser '*) 9 left  *)
+              (,(make-builtin-binary-parser '/) 9 left  /)
+              (,(make-builtin-binary-parser '^) 9 left  ^)
+              (,(make-builtin-binary-parser '%) 9 left  %)
+              
+              (,(make-binary-parser '_or_) 3 right _or_)
+              (,(make-binary-parser '_and_) 5 right _and_)
+              (,(make-builtin-binary-parser '_&&_) 5 right _&&_)
+              (,(make-builtin-binary-parser '|_\|\|_|) 3 right |_\|\|_|)
+              (,(make-builtin-binary-parser '_==_) 7 left _==_)
+              (,(make-builtin-binary-parser '_>=_) 7 left _>=_)
+              (,(make-builtin-binary-parser '_<=_) 7 left _<=_)
+              (,(make-builtin-binary-parser '_>_) 7 left  _>_)
+              (,(make-builtin-binary-parser '_<_) 7 left  _<_)
+              (,(make-builtin-binary-parser '_+_) 7 left  _+_)
+              (,(make-builtin-binary-parser '_-_) 7 left  _-_)
+              (,(make-builtin-binary-parser '_*_) 9 left  _*_)
+              (,(make-builtin-binary-parser '_/_) 9 left  _/_)
+              (,(make-builtin-binary-parser '_^_) 9 left  _^_)
+              (,(make-builtin-binary-parser '_%_) 9 left  _%_)
+              
+              (,array-ref 10 left !)
+              (,function-application 10 left call)))
+       
+       (post `((,object-ref 11 none |.|))))
+    (make-operator-table pre in post)))
+
+(define-parser (yera-interface-term)
+  (<> (yera-interface-selfeval)
+      (yera-symbol)))
+
+(define-parser (yera-interface-selfeval)
+  (>> (<- is (list-of "(" yera-symbol ")"))
+      (return `(interface ,@is))))
+
+(define-parser (yera-interface-expression)
+  (expr interface-expression-ot
+        yera-interface-term))
+
+(define-parser (yera-interface ot)
+  (>> (word "interface")
+      (yera-space)
+      (yera-interface-expression)))
+      
+(define-parser (yera-struct pwd ot)
+  (>> (word "struct")
+      (yera-space)
+      (char #\:)
+      (yera-space)
+      (<- is (yera-interface-expression))
+      (yera-space)
+      (word "->")
+      (yera-space)
+      (<- bs (yera-bindings pwd ot))
+      (word "end")
+      (return `(struct ,is ,(bindings-assignments bs)))))
+
+(define interface-expression-ot
+  (make-operator-table
+   `()
+   `((
+      ,(parser ()
+               (>> (yera-space)
+                   (char #\U)
+                   (yera-space)
+                   (return
+                    (lambda (x y)
+                      `(($union ,x) ,y)))))
+      1 left))
+   `()))
+
+(define-parser (yera-file pwd ot)
+  (>> (yera-space)
+      (<- bs (yera-bindings pwd ot))
+      (yera-space)
+      (eos)
+      (return bs)))
+
+(define (yera->bytecode pwd in)
+  (with-exception-catcher
+   (lambda (ex)
+     (if (parser-exception? ex)
+         (raise (make-parser-exception
+                 (string-append
+                  (parser-exception-reason ex) "@("
+                  (number->string (input-port-line in)) ","
+                  (number->string (input-port-column in)) ")")))
+         (raise ex)))
+   (lambda ()
+     (bindings-assignments (run (yera-file pwd *-operator-table-*) (port->stream in))))))
+
+(define bytecode->js bindings-compile)
+
+(define (yera->js pwd in #!optional (out (current-output-port)))
+  (display "with (Yera) {\n" out)
+  (bytecode->js
+   (eager-simplify-boxes
+    (bindings-lazy->eager
+     (yera->bytecode pwd in)))
+   out)
+  (display "}" out))
