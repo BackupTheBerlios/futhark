@@ -1,0 +1,11 @@
+To test this:
+
+Download and install Gambit-C scheme System.
+then Run
+	     gsi futhark
+
+with your browser visit the url
+
+	     http://localhost:1080
+
+and click on the examples.
