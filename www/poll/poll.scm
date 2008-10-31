@@ -48,6 +48,7 @@
 
 
 (define (poll-register u)
+  (pp `(poll-register ,u))
   (gebo-send u (list->table
                 `(
                   ("title" . ,*title*)

@@ -49,7 +49,7 @@
 ;; (pg-session-dbname "sessions")
 ;; (pg-session-user "francesco")
 
-(ehwas-pages-compiler "gscc")
+;; (ehwas-pages-compiler "gscc")
 (ehwas-pages-compile? #t)
 
 (define *-registry-* (make-table))
