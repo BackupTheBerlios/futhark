@@ -37,7 +37,6 @@
   (make-parameter
    (let*(
          (cd (current-directory)))
-     (declare (fixnum -))
      (string (string-ref cd (- (string-length cd) 1))))))
          
 
@@ -122,17 +121,35 @@
       (call-with-output-file of
         (run (server-page) (port->stream ip))))))
 
+;; (define (scheme->application if of)
+;;   (call-with-output-file of
+;;     (lambda (op)
+;;       (display
+;;        (list
+;;         (map (lambda (s) `("(##include \"" ,s "\")\n")) (ehwas-pages-includes))
+;;         "(ehwas-pages#registry-set! \"" (path-strip-extension if) "\" (lambda (request)\n"
+;;         "(include \"" (ehwas-pages-header) "\")\n"
+;;         "(include \"" (path-strip-directory if) "\")\n"
+;;         "response))")
+;;         op))))
+
 (define (scheme->application if of)
   (call-with-output-file of
     (lambda (op)
-      (display
-       (list
-        (map (lambda (s) `("(##include \"" ,s "\")\n")) (ehwas-pages-includes))
-        "(ehwas-pages#registry-set! \"" (path-strip-extension if) "\" (lambda (request)\n"
-        "(include \"" (ehwas-pages-header) "\")\n"
-        "(include \"" (path-strip-directory if) "\")\n"
-        "response))")
-        op))))
+      (for-each
+       (lambda (s)
+         (write `(##include ,s) op)
+         (newline op))
+       (ehwas-pages-includes))
+      (display "(ehwas-pages#registry-set! " op)
+      (write (path-strip-extension if) op)
+      (display "(lambda (request)" op)
+      (newline op)
+      (write `(include ,(ehwas-pages-header)) op)
+      (newline op)
+      (write `(include ,(path-strip-directory if)) op)
+      (newline op)
+      (display "response))" op))))
   
 ; (define (application->object if of)
 ;   (let(
