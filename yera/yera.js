@@ -37,11 +37,10 @@ var Yera = (function () {with (Actors) with(ActorsTest){
     };
 
     var St = function (v) {
-	this.name = "state";
 	this.value = v;
 	this.then = [];
     }
-
+    St.prototype.name = "state";
     St.prototype.addSource = function (s, b) {
 	this.then [s.role] = {
 	    source: s,
@@ -63,22 +62,22 @@ var Yera = (function () {with (Actors) with(ActorsTest){
 
     // events;
     function Register (a, r) {
-	this.name = "register";
 	this.from = a;
 	this.role = r;
     }
+    Register.prototype.name = "register";
 
     function Unregister (a, r) {
-	this.name = "unregister";
 	this.from = a;
 	this.role = r;
     }
+    Unregister.prototype.name = "unregister";
 
     function Update (r, v) {
-	this.name = "update";
 	this.role = r;
 	this.value = v;
     }
+    Update.prototype.name = "update";
     
     var removeRole = function (ls, m) {
 	var r = [];
@@ -93,15 +92,15 @@ var Yera = (function () {with (Actors) with(ActorsTest){
 
 	for (var j in s1.then) 
 	    if (! s0.then [j])
-		send (s1.then[j].source , new Register (self (), j))
+		send_actor (s1.then[j].source , new Register (self (), j))
 
 	for (var j in s0.then)
 	    if (! s1.then [j])
-		send (s0.then[j].source , new Unregister (self (), j));;
+		send_actor (s0.then[j].source , new Unregister (self (), j));;
 	
 	for (var j = 0; j < ls.length; j++) {
 	    var l = ls [j];
-	    send (l.from, new Update (l.role, s1.value));
+	    send_actor (l.from, new Update (l.role, s1.value));
 	}
 	clearMemo ();
 	reactimate (s1, ls);
@@ -111,7 +110,7 @@ var Yera = (function () {with (Actors) with(ActorsTest){
 	recv (
 	    cond (
 		hasType (Register, function (m) {
-		    send (m.from, new Update (m.role, s0.value));
+		    send_actor (m.from, new Update (m.role, s0.value));
 		    reactimate (s0, ls.concat ([m]));
 		}),
 		hasType (Unregister, function (m) {
@@ -136,9 +135,9 @@ var Yera = (function () {with (Actors) with(ActorsTest){
     var reactimateInit = function (s) {
 	recv (hasType (Register, function (m) {
 	    for (var j in s.then) {
-		send (s.then[j].source , new Register (self (), j));
+		send_actor (s.then[j].source , new Register (self (), j));
 	    }
-	    send (m.from, new Update (m.role, s.value));
+	    send_actor (m.from, new Update (m.role, s.value));
 	    reactimate (s, [m]);
 	}));
     }
@@ -267,6 +266,7 @@ var Yera = (function () {with (Actors) with(ActorsTest){
     }
     
     var toElement = function (v, c0) {
+	if (c0 && v && c0.yera_value == v) return c0;
 	if (c0 && v && c0.nodeName == v.nodetype && (c0.namespaceURI ? c0.namespaceURI == v.namespace : true))
 	    return restructElement (v, c0);
 	if (c0 && ((typeof v) == 'string') && c0.nodeType == 3)
@@ -332,7 +332,7 @@ var Yera = (function () {with (Actors) with(ActorsTest){
     var control = function (updater) {
 	recv (
 	    hasType (Update, function (m) {
-		send (updater, m.value);
+		send_actor (updater, m.value);
 		control(updater);
 	    }));
     }
@@ -342,7 +342,7 @@ var Yera = (function () {with (Actors) with(ActorsTest){
 	var ud = idUpdater (id);
 	var ct = src (function () {control (ud);});
 
-	send (be, new Register (ct, "connect"));
+	send_actor (be, new Register (ct, "connect"));
     }
 
     var $dlunion = box (function () {

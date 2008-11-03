@@ -17,10 +17,10 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 		hasType (Register, function (m) {
 		    var me = self ();
 		    var h = setInterval (function () {
-			send (me, new YeraEvent ("ciao"));
+			send_actor (me, new YeraEvent ("ciao"));
 		    }, d);
 		    var t = now ();
-		    send (m.from, new Update (m.role, t));
+		    send_actor (m.from, new Update (m.role, t));
 		    timeUpdate (t, d, h, [m]);
 		}));
 	}
@@ -29,7 +29,7 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 	    recv ( 
 		cond (
 		    hasType (Register, function (m) {
-			send (m.from, new Update (m.role, t));
+			send_actor (m.from, new Update (m.role, t));
 			timeUpdate (t, d, h, ls.concat ([m]));
 		    }),
 		    hasType (Unregister, function (m) {
@@ -42,7 +42,7 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 			var t1 = now ();
 			for (var j = 0; j < ls.length; j++) {
 			    var l = ls [j];
-			    send (l.from, new Update (l.role, t1));
+			    send_actor (l.from, new Update (l.role, t1));
 			}
 			timeUpdate (t1, d, h, ls);
 		    })));
@@ -135,9 +135,9 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 				ev.target = ev.fromElement;
 			    } catch (x) {} else try {ev.relatedTarget = ev.fromElement} catch (x) {};
 
-			send (me, new YeraEvent (ev));
+			send_actor (me, new YeraEvent (ev));
 		    }
-		    send (m.from, new Update (m.role, null));
+		    send_actor (m.from, new Update (m.role, null));
 		    registerEvent (x, h);
 		    eventUpdate (x, h, [m]);
 		}));
@@ -161,9 +161,9 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 // 				ev.target = ev.fromElement;
 // 			else ev.relatedTarget = ev.fromElement;
 
-// 			send (me, new YeraEvent (ev));
+// 			send_actor (me, new YeraEvent (ev));
 // 		    }
-// 		    send (m.from, new Update (m.role, null));
+// 		    send_actor (m.from, new Update (m.role, null));
 // 		    registerEvent (x, h);
 // 		    eventUpdate (x, h, [m]);
 // 		}));
@@ -176,9 +176,9 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 // 		    var h = function (ev) {
 // 			if (! ev) ev = window.event;
 // 			ev.preventDefault ();
-// 			send (me, new YeraEvent (ev));
+// 			send_actor (me, new YeraEvent (ev));
 // 		    }
-// 		    send (m.from, new Update (m.role, null));
+// 		    send_actor (m.from, new Update (m.role, null));
 // 		    registerEvent (x, h);
 // 		    eventUpdate (x, h, [m]);
 // 		}));
@@ -188,7 +188,7 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 	    recv(
 		cond (
 		    hasType (Register, function (m) {
-			send (m.from, new Update (m.role, null));
+			send_actor (m.from, new Update (m.role, null));
 			eventUpdate (x, h, ls.concat ([m]));
 		    }),
 		    hasType (Unregister, function (m) {
@@ -201,8 +201,8 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 		    hasType (YeraEvent, function (m) {
 			for (var j = 0; j < ls.length; j++) {
 			    var l = ls [j];
-			    send (l.from, new Update (l.role, m.event));
-			    send (l.from, new Update (l.role, null));
+			    send_actor (l.from, new Update (l.role, m.event));
+			    send_actor (l.from, new Update (l.role, null));
 			}
 			eventUpdate (x, h, ls);
 		    })));

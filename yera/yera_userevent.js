@@ -45,7 +45,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 	    recv(
 		cond (
 		    hasType (Register, function (m) {
-			send (m.from, new Update (m.role, null));
+			send_actor (m.from, new Update (m.role, null));
 			usereventUpdate (h, ls.concat ([m]));
 		    }),
 		    hasType (Unregister, function (m) {
@@ -54,8 +54,8 @@ with (Yera) with (Actors) with (ActorsTest) {
 		    hasType (YeraUserevent, function (m) {
 			for (var j = 0; j < ls.length; j++) {
 			    var l = ls [j];
-			    send (l.from, new Update (l.role, m.event));
-			    send (l.from, new Update (l.role, null));
+			    send_actor (l.from, new Update (l.role, m.event));
+			    send_actor (l.from, new Update (l.role, null));
 			}
 			usereventUpdate (h, ls);
 		    }),
@@ -67,7 +67,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 	var usereventSource = src (function () {
 	    var me = self ();
 	    var h = function (m) {
-		send (me, new YeraUserevent (m));
+		send_actor (me, new YeraUserevent (m));
 	    }
 	    userevent.addListener (h);
 	    usereventUpdate (h, []);
