@@ -67,6 +67,10 @@ with (Actors) {
 	    if (o instanceof Array) return arrayToString (o);
 	    else if (typeof o == 'string') return stringToString (o);
 	    else if (typeof o == 'number') return o;
+	    else if (o == undefined) return 'undefined';
+	    else if (o == null) return 'null';
+	    else if (o == true) return 'true';
+	    else if (o == false) return 'false';
 	    else if (typeof 0 == 'function') throw "json conversion error : function";
 	    else if (o instanceof Object) return objectToString (o);
 	    else return stringToString (typeof o);
@@ -84,10 +88,10 @@ with (Actors) {
 	    var con = XHR();
 	    con.open("GET", host + "/gebo/listen?" + connection_id, true);
 	    con.onreadystatechange = function () {
-		if (con.readyState == 4) {
+		if (con.readyState == 4 && con.status == 200) {
 		    con.onreadystatechange = null;
 		    http_init_in ();
-		    if (con.responseText) {
+		    if (con.responseText ) {
 			var ms = stringToJson (con.responseText);
 			for (var j = 0; j < ms.length; j++) {
 			    var m = ms [j];
@@ -118,9 +122,9 @@ with (Actors) {
 	    if (mailbox.length > 0) send_data ();
 	}
 
-	var actor_send = function (a, msg) {
-	    Actors.send (a, msg);
-	}
+// 	var actor_send = function (a, msg) {
+// 	    Actors.send_actor (a, msg);
+// 	}
 	
 	var remote_send = function (pid, msg) {
 	    mailbox [mailbox.length] = {
@@ -130,7 +134,7 @@ with (Actors) {
 	}
 	
 	var local_send = function (id, msg) {
-	    Actors.send (idToActor (id["process-id"]), msg)
+	    send_actor (idToActor (id["process-id"]), msg)
 	}
 
 	var scheme_send = function (id, msg) {
@@ -186,7 +190,7 @@ with (Actors) {
 		return r;
 	    }
 	    if (msg instanceof Object) {
-		var r = [];
+		var r = {};
 		for (var j in msg)
 		    r [j] = addrToActor (msg [j]);
 		return r;
@@ -195,7 +199,8 @@ with (Actors) {
 	}
 	
 	var send = function (id, msg) {
-	    if (id instanceof Actor) return actor_send (id, msg);
+	    if (id instanceof Actor) return send_actor (id, msg);
+	    // if (id instanceof Actor) return actor_send (id, msg);
 	    return scheme_send (id, msg);
 	}
 
@@ -215,6 +220,8 @@ with (Actors) {
 	}
 	
 	return {
+	    jsonToString: jsonToString,
+	    
 	    init: init,
 	    send: send,
 	    get: get,

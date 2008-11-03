@@ -5,6 +5,7 @@
 }
 
 .bar_box {
+    text-align:left;
     display: block;
     background-color:#CCCCCC;
     width: 150px;

@@ -3,12 +3,50 @@
 <title>Futhark Examples</title>
 </head>
 <body>
-<div><a href = "clock-svg.ehwas">an SVG clock</a>(only opera or firefox)</div>
-<div><a href = "test_1.svg">an SVG (click on hearts) test</a>(only opera or firefox)</div>
-<div><a href = "clock-html.ehwas">an html clock</a></div>
-<div><a href = "gui.ehwas">an example with mouse events</a></div>
-<div><a href = "test-query-post.html">a test page for multipart/form-data encoding</a></div>
-<div><a href = "test_import.ehwas">a test page of (ehwas-import file)</a></div>
-<div><a href = "gebo-test.html">a simple page that query a remote echo actor</a></div>
+<div><a href = "clock-svg.ehwas">an SVG clock(YERA)</a>(only opera or firefox)
+<br> 
+this is obtained mixing up svg and xhtml tags.
+Yera is a functional reactive programming language used to implement it,
+the code is shown in the same page.
+Yera compiles to javascript.
+</div><br>
+
+<div><a href = "test_1.svg">another SVG test (YERA)</a>(only opera or firefox)
+<br>
+Click on the hearts to change the sentence.
+</div><br>
+
+<div><a href = "clock-html.ehwas">an html clock (YERA)</a>
+<br>
+This is a very simple Yera applications
+</div><br>
+
+<div><a href = "gui.ehwas">an example with mouse events(YERA) </a>
+<br>
+click on icons in the top part, it will update counters in the bottom part.
+</div><br>
+
+<div><a href = "test-query-post.html">a test page for multipart/form-data encoding(EHWAS) </a>
+<br>
+show the text inserted and the file that is uploaded.
+</div><br>
+
+<div><a href = "test_import.ehwas">a test page of (ehwas-import file)(EHWAS)</a>
+it imports a scheme value from imp.scm and show it.
+</div><br>
+
+<div><a href = "gebo-test.html">a simple page that query a remote echo actor(EHWAS)</a>
+  sends a series of query from browser to server that responds with an echo.
+</div><br>
+
+<div><a href = "chatroom/chatroom.html">a simple chatroom using push tech(GEBO)</a>
+  this is a chatroom that uses push technology (that is named GEBO).
+  the program abstraction used to implement this is the actor model.
+</div><br>
+
+<div><a href = "poll/poll.html">a poll system that updates realtime (GEBO + YERA)</a>
+  this uses GEBO to implement the update of result graph, and
+  Yera to implement the graphical user interface.
+</div>
 </body>
 </html>

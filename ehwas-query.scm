@@ -229,7 +229,8 @@
 
 (define (data-decode boundary port)
   (list->table
-   (run (dataencoded-query boundary) (port->stream port))))
+   (run (dataencoded-query boundary)
+        (port->stream port))))
 
 (define (get-boundary v)
   (cdr

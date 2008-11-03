@@ -1,6 +1,12 @@
 with (Actors) with (ActorsTest) {
 
     var ActorsMatch  = function () {
+	
+	var clone = function (o) {
+	    var r = {};
+	    for (var j in o) r [j] = o [j];
+	    return r;
+	}
 
 	var _ = ['any'];
 	
@@ -13,25 +19,25 @@ with (Actors) with (ActorsTest) {
 	    var n = a.substring(1);
 	    if (bs [n] != undefined) 
 		return unify (b,bs [n], bs);
-	    bs [n] = b;
-	    return bs;
+	    var bs1 = clone (bs);
+	    bs1 [n] = b;
+	    return bs1;
 	}
 
 	var unify_array = function (a, b, bs) {
-	    if (! b instanceof Array) return false;
+	    if (! (b instanceof Array)) return false;
 	    if (b.length != a.length) return false;
-	    var r = bs;
+	    var r = clone (bs);
 	    for (var j = 0; j < a.length; j++)
 		r = unify (a [j], b [j], r);
 	    return r;
 	}
 
 	var unify_object = function (a, b, bs) {
-	    if (! b instanceof Object) return false;
-	    var r = bs;
+	    if (! (b instanceof Object)) return false;
+	    var r = clone (bs);
 	    for (var j in a)
 		r = unify (a [j], b [j], r);
-
 	    return r;
 	}
 
@@ -39,10 +45,10 @@ with (Actors) with (ActorsTest) {
 	    if (a == _ || b == _)
 		return bs;
 
-	    if (a[0] == '?')
+	    if (typeof a == 'string' && a.substring (0,1) == '?')
 		return unify_var (a,b,bs);
 
-	    if (b[0] == '?')
+	    if (typeof b == 'string' && b.substring (0,1) == '?')
 		return unify (b,a,bs);
 
 	    if (typeof a == 'number' ||
@@ -53,7 +59,7 @@ with (Actors) with (ActorsTest) {
 	    if (a instanceof Array)
 		return unify_array (a,b,bs)
 
-	    if (typeof a == 'object')
+	    if (a instanceof Object)
 		return unify_object (a,b,bs);
 
 	    return false;
@@ -66,6 +72,7 @@ with (Actors) with (ActorsTest) {
 	}
 
 	return {
+	    unify: unify,
 	    match: match,
 	    _: _
 	}

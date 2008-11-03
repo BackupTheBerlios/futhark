@@ -225,9 +225,41 @@
     (if (null? l) i
         (f (car l) (fold (cdr l) i)))))
 
-(define (json-read #!optional (port (current-input-port)) (tr (lambda (x) x)))
-  (run (json-value tr) (port->stream port)))
+;; this is very dirty about using buffered ports
 
+(define (string->u8vector s)
+  (let(
+       (r (make-u8vector (string-length s))))
+    (let loop ((c 0))
+      (if (>= c (string-length s)) r
+          (begin
+            (u8vector-set! r c (char->integer (string-ref s c)))
+            (loop (+ c 1)))))))
+
+(define (empty-buffer port)
+  (let*(
+        (ln (input-port-characters-buffered port))
+        (s (make-string ln)))
+    (pp `(empty-buffer ,ln))
+    (read-substring s  0 ln port)
+    (string->u8vector s)))
+
+(define (json-read #!optional (port (current-input-port)) (tr (lambda (x) x)))
+  (with-exception-catcher
+   (lambda (ex) (pp ex))
+   (lambda () 
+     (let*(
+           (s1 (empty-buffer port)))
+       (call-with-input-u8vector
+        (list init: s1
+              char-encoding: 'UTF)
+        (lambda (p0)
+          (port-settings-set! port (list char-encoding: 'UTF))
+          (run (json-value tr)
+               (stream-append
+                (port->stream p0)
+                (port->stream port)))))))))
+   
 ;; scheme to json transform stuff;
  
 (define (json-write o #!optional (p (current-output-port)) (tr (lambda (x) x)))

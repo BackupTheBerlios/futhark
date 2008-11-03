@@ -112,6 +112,7 @@
       (lambda (c)
         ;; INSERT HERE LOG ERROR CODE
         ;; ignore all errors and close connection
+        (pp (type-exception-procedure c))
         (exit 'ok))
       (lambda ()
         (let(
@@ -123,6 +124,7 @@
   ;; (declare (fixnum port))
   (open-tcp-server
    (list
+    char-encoding: 'ASCII
     eol-encoding: 'cr-lf
     server-address: host
     port-number: port

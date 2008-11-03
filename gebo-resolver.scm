@@ -100,15 +100,16 @@
 
 (define (pawned-empty-mailbox)
   (let(
-       (c (thread-mailbox-next (gebo-wait-timeout) #f)))
+       (c (thread-mailbox-next (gebo-wait-timeout) 'die)))
     (cond
      ((eq? c 'free)
       (thread-mailbox-extract-and-rewind)
       (empty-mailbox))
-     (c
-      (pawned-empty-mailbox))
-     (else
-      (silently-die)))))
+     ((eq? c 'die)
+      (silently-die))
+
+     (else 
+      (pawned-empty-mailbox)))))
 
 (define (pawned-full-mailbox f r)
   (let(
@@ -154,7 +155,7 @@
       (let(
            (r1 (cdr c)))
         (set-cdr! r r1)
-        (full-mailbox f r)))
+        (full-mailbox f r1)))
 
      ((and (pair? c) (eq? (car c) 'get))
       (thread-send (cadr c) f)
@@ -162,6 +163,7 @@
 
      ((eq? c 'pawn)
       (pawned-full-mailbox f r)))))
+
 
 (define (make-mailbox)
   (thread-start!
@@ -201,12 +203,17 @@
 (define (js-send to msg)
   (let(
        (th (uid->mailbox (jid-conn-id to))))
-    (thread-send th
-     `(put ,(obj ("pid" to) ("message" msg))))))
+    (thread-send
+     th
+     `(put ,(list->table `(("pid" . ,to) ("message" . ,msg)))))))
+
+;;     (thread-send th
+;;      `(put ,(obj ("pid" to) ("message" msg))))))
 
 (define (json-response r o)
   (let(
-       (str (call-with-output-u8vector (u8vector)
+       (str (call-with-output-u8vector
+             (u8vector)
              (lambda (p)
                (json-write o p scheme-id->javascript-id)))))
     (make-response

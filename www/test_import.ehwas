@@ -7,5 +7,5 @@
 </head>
 <h1>Test (ehwas-import file)</h1>
 <p><?scheme (echo imp) ?></p>
-<p>from <a href = "imp.scm">imp.scm</a></p>
+<p>from <a href = "imp.scm">imp.scm</a> (have to lead to a 404 Page not found response)</p>
 </html>

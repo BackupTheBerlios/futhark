@@ -113,7 +113,7 @@ var Actors = (function () {
 	return a;
     }
     
-    var send = function (a, m) {
+    var send_actor = function (a, m) {
 	a.mailbox.push (m);
 	resume (a);
     }
@@ -140,7 +140,7 @@ var Actors = (function () {
 	Suspension : Suspension,
 	EndOfMailbox : EndOfMailbox,
 	actor : actor,
-	send : send,
+	send_actor : send_actor,
 	self : self,
 	current : current,
 	consume : consume,

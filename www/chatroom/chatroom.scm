@@ -6,20 +6,33 @@
 
 (define *users* (make-table))
 
-(define *queue* '())
+(define *emp* (list 'emp))
 
-(define-macro (enq m)
-  `(set!
-    *queue*
-    (if (>= (length *queue*) 5)
-        (append
-         (cdr *queue*)
-         (list m))
-        (append *queue* (list ,m)))))
-  
-(define (chat)
+(define *size* 10)
+
+(define *queue* (make-vector *size* *emp*))
+
+(define *pt* -1)
+
+(define-macro (nxt)
+  '(modulo (+ 1 *pt*) *size*))
+
+(define (enq v)
+  (set! *pt* (nxt))
+  (vector-set! *queue* *pt* v))
+
+(define (queue-for-each fn)
+  (let loop ((j 0))
+    (cond
+     ((>= j *size*) 'ok)
+     ((vector-ref *queue* (modulo (+ 1 j *pt*) *size*)) =>
+      (lambda (k)
+        (if (not (eq? k *emp*)) (fn k))
+        (loop (+ j 1)))))))
+              
+ (define (chat)
   (with-exception-catcher
-   (lambda (ex) (chat))
+   (lambda (ex) (pp ex) (chat))
    (lambda ()
      (let(
           (c (thread-receive)))
@@ -45,15 +58,13 @@
         (lambda (ex)
           (table-set! *users* u))
         (lambda ()
-          (pp `(gebo-send ,a ,msg))
           (gebo-send a msg))))
      *users*))
 
 (define (send-queue addr)
-  (for-each
+  (queue-for-each
    (lambda (m)
-     (gebo-send addr (obj ("message" m))))
-   *queue*))
+     (gebo-send addr m))))
 
 (define (success-enter name addr)
   ;; send new user to each connected user
@@ -61,9 +72,9 @@
    (obj ("newUser" (obj ("name" name) ("address" addr)))))
   ;; send welcome message
   (gebo-send addr (obj ("welcome"
-                        (string-append "welcome to chatroom," name))))
+                        (string-append "welcome to chatroom, " name))))
   ;; send user list
-  (gebo-send addr (obj ("users" *users*)))
+  (gebo-send addr (obj ("users" (table-copy *users*))))
   
   ;; send queue messages
   (send-queue addr)
@@ -103,22 +114,19 @@
         (exit-fail name addr))))
 
 
-;; {publish: msg}
+;; {publish: {"from": name, "body": body}}
 (define (publish msg)
-  (pp `(publish ,msg))
-  (enq msg)
-  (broadcast (obj ("message" msg)))
-  (chat))
+  (let(
+       (m (obj ("message" msg))))
+    (enq m)
+    (broadcast m)
+    (chat)))
 
 
 (define *chat*
   (thread-start!
    (make-thread
     chat)))
-
-
-
-
 
 
         

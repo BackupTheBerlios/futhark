@@ -4,8 +4,6 @@ rgb r g b = {
   blue: b
 };
 
-
-
 colorTrans t x y = rgb r g b
     where
       trans u v = u + (v - u) * t;

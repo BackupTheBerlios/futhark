@@ -2,74 +2,17 @@
   <head>
     <script type = "text/ecmascript" src = "/gebo/rts.js"></script>
     <script type = "text/ecmascript" src = "/yera/rts.js"></script>
-    <script type = "text/ecmascript">
-
-with (Actors) with (ActorsMatch) with (ActorsTest) with (ActorsRemote) {
-
-    ActorsRemote.init ();
-    var chatroom = get ("/registry/chatroom");
-
-    var main = function () {
-	var name = prompt ("What's your nickname?");
-	send (chatroom, {"enter": {"name": name, "address": self ()}});
-	recv (
-	    cond(
-		match ("fail", function (bs) {
-		    alert ("login failed, try another nickname.");
-		}),
-		match ({"welcome" : '?msg'}, function (bs) {
-		    document.getElementById ("nick").appendChild(
-			document.createTextNode(name + ":"));
-		    alert (bs.msg);
-		    working ();
-		})));
-    };
-
-    var working = function () {
-	recv (
-	    cond (
-// 		match ({"users" : '?users'}, function (bs) {
-// 		    var users = bs.users;
-// 		    working ();
-// 		}),
-		match ({"message": {"from": '?nm', "body": '?msg'}}, function (bs) {
-		    document.getElementById("body").appendChild(
-			document.createTextNode (bs.nm + ":"+ bs.msg + "\n"));
-		    working ();
-		}),
-// 		match ({"newUser": '?user'}, function (bs) {
-// 		    working ();
-// 		}),
-// 		match ({"exitUser": '?user'}, function (bs) {
-// 		    working ();
-// 		}),
-		otherwise(function (m) {
-		    var s = ""; for (var j in  m) s+= j + ":" + m [j] + "\n"; alert (s);
-		    working ();
-		})
-	    ));
+    <script type = "text/ecmascript" src = "chatroom.js"></script>
+    <style>
+    .nick{
+	color: #ff0000;
     }
-
-    var sendMessage = function () {
-	send (chatroom, {"publish": 
-			 {"from": name,
-			  "body": document.getElementById ("message").value}});
-	document.getElementById("message").value = "";
-    }
-    var main_actor = actor (main);
-}// end of with (Actors) ...
-	    
-
-    </script>
-    
+    </style>
   </head>
-  <body>
-    <center>
-      <div><h6 id = "nick"></h6>
-	<input type = "text" id = "message"/>
-	<input type = "submit" onclick = "sendMessage()"/>
+    <body onunload = "ActorsRemote.send (chatroom, {'exit': {'name': name, 'address' : main_actor}})">
+      <div><b class = "nick" id = "nick"></b>
+	<input type = "text" id = "message" onchange = "sendMessage()" width = "60"/>
        </div> 
-      <pre id = "body"/>
-    </center>
+    <pre id = "body" style = "text-align:left"/>
   </body>
 </html>
