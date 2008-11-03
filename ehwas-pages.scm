@@ -33,6 +33,14 @@
          "ehwas-cookies#.scm"
          "file-sessions#.scm"))))
 
+(define path-separator
+  (make-parameter
+   (let*(
+         (cd (current-directory)))
+     (declare (fixnum -))
+     (string (string-ref cd (- (string-length cd) 1))))))
+         
+
 (define ehwas-pages-header
   (make-parameter
    (string-append (current-directory) "ehwas-header#.scm")))
@@ -230,7 +238,7 @@
        (let conv ((p (cdr p)))
          (if (null? p) ""
              (string-append
-              "/" (car p)
+              (path-separator) (car p)
               (conv (cdr p))))))))
 
 
@@ -248,5 +256,5 @@
       (and (not (null? (uri-path (request-uri request))))
            (let*(
                  (local (path->localstring (uri-path (request-uri request))))
-               (full (string-append root "/" local)))
+               (full (string-append root (path-separator) local)))
              ((registry-get full) request))))))
