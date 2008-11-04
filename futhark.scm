@@ -1,49 +1,5 @@
-;; (load "~~/lib/termite/termite")
-
-(load "ansuz-streams")
-(load "ansuz-kernel")
-(load "ansuz-extras")
-(load "ansuz-expressions")
-
-(load "rfc3986")
-(load "rfc822")	
-
-(load "ehwas-request")	
-(load "ehwas-response")
-(load "ehwas-errors")				
-(load "ehwas-resolver")
-(load "ehwas-server")
-(load "ehwas-query")
-
-(load "ehwas-cookies")
-
-(load "ehwas-pages")
-
-(load "uids")
-(load "base64")
-(load "gebo-json")
-(load "gebo-resolver")
-
-(load "yera-mangle")
-(load "yera-compile")
-(load "yera-parser")
-(load "yera-resolver")
-
-(load "file-sessions")
-(include "file-sessions#.scm")
-
-;; (load "postgresql")
-;; (load "pg-sessions")
-;; (include "pg-sessions#.scm")
-
-(include "ehwas-server#.scm")
-(include "ehwas-resolver#.scm")
-(include "ehwas-request#.scm")
-(include "ehwas-pages#.scm")
-
-(include "gebo-resolver#.scm")
-(include "yera-resolver#.scm")
-
+(load "fgi")
+(include "fgi#.scm")
 
 (file-session-dir "sessions")
 ;; (pg-session-dbname "sessions")
