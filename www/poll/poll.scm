@@ -48,7 +48,7 @@
 
 
 (define (poll-register u)
-  (pp `(poll-register ,u))
+  ;; (pp `(poll-register ,u))
   (gebo-send u (list->table
                 `(
                   ("title" . ,*title*)
@@ -58,12 +58,12 @@
   (poll))
 
 (define (poll-unregister u)
-  (pp `(poll-unregister ,u))
+  ;; (pp `(poll-unregister ,u))
   (deluser u)
   (poll))
 
 (define (poll-choice x)
-  (pp `(poll-choice ,x))
+  ;; (pp `(poll-choice ,x))
   (let(
        (n1 (+ 1 (table-ref *result* x))))
     (table-set! *result* x n1)

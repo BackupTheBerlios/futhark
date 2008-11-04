@@ -240,25 +240,20 @@
   (let*(
         (ln (input-port-characters-buffered port))
         (s (make-string ln)))
-    (pp `(empty-buffer ,ln))
     (read-substring s  0 ln port)
     (string->u8vector s)))
 
 (define (json-read #!optional (port (current-input-port)) (tr (lambda (x) x)))
-  (with-exception-catcher
-   (lambda (ex) (pp ex))
-   (lambda () 
-     (let*(
-           (s1 (empty-buffer port)))
-       (call-with-input-u8vector
-        (list init: s1
-              char-encoding: 'UTF)
-        (lambda (p0)
-          (port-settings-set! port (list char-encoding: 'UTF))
-          (run (json-value tr)
-               (stream-append
-                (port->stream p0)
-                (port->stream port)))))))))
+  (let(
+       (s1 (empty-buffer port)))
+    (call-with-input-u8vector
+     (list init: s1
+           char-encoding: 'UTF)
+     (lambda (p0)
+       (run (json-value tr)
+            (stream-append
+             (port->stream p0)
+             (port->stream port)))))))
    
 ;; scheme to json transform stuff;
  

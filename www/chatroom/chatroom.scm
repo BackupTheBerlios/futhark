@@ -32,7 +32,9 @@
               
  (define (chat)
   (with-exception-catcher
-   (lambda (ex) (pp ex) (chat))
+   (lambda (ex)
+     ;; (pp ex)
+     (chat))
    (lambda ()
      (let(
           (c (thread-receive)))
@@ -96,9 +98,15 @@
            (fail-enter name addr))))
 
 (define (exit-success name addr)
-  (broadcast (obj ("exitUser" name)))
-  (chat))
-
+  (let(
+       (a0 (table-ref *users* name #f)))
+    (if (not (equal? a0 addr))
+        (pp '(address not match))
+        (begin
+          (table-set! *users* name)
+          (broadcast (obj ("exitUser" name)))
+          (chat)))))
+  
 (define (exit-fail name addr)
   ;; incident will be reported
   (chat))
