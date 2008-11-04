@@ -1,10 +1,10 @@
 (##namespace
  ("ehwas-sessions#"
-  session-pg-dbname
-  session-pg-user
-  init-session
-  session-identifier
-  session-ref
-  session-set!
+  current-session-driver
+  make-session-driver
   
+  session-init
+  session-identifier
+  session-table
+  clean-sessions
   ))

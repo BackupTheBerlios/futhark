@@ -2,13 +2,14 @@
 
 (##include "~~/lib/gambit#.scm")
 (include "postgresql#.scm")
+(include "ehwas-sessions#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (block)
          (not safe))
 
-(define-structure session connection identifier table)
+(define-structure pg-session connection identifier table)
 
 (define pg-session-dbname (make-parameter ""))
 (define pg-session-user (make-parameter ""))
@@ -35,9 +36,9 @@
 (define (session-will s)
   (make-will s
              (lambda (_)
-               (pg-save (session-identifier s)
-                        (session-table s)
-                        (session-connection s)))))
+               (pg-save (pg-session-identifier s)
+                        (pg-session-table s)
+                        (pg-session-connection s)))))
 
 (define *-expired-* (list 'expired))
 
@@ -52,7 +53,7 @@
                          (pg-session-user)
                          (pg-session-password)))
            (tbl (pg-get-table uid con)))
-       (make-session con uid tbl)))))
+       (make-pg-session con uid tbl)))))
 
 (define (hard-new-session)
   (let*(
@@ -60,7 +61,7 @@
                       (pg-session-user)
                       (pg-session-password)))
         (uid (pg-new-uid con)))
-    (make-session con uid (make-table))))
+    (make-pg-session con uid (make-table))))
 
 (define *-session-cache-*
   (make-table test: string=? init: #f weak-keys: #t  weak-values: #t))
@@ -68,7 +69,7 @@
 (define (put-cache s)
   (table-set!
    *-session-cache-*
-   (session-identifier s)
+   (pg-session-identifier s)
    (session-will s))
   s)
 
@@ -84,14 +85,14 @@
 (define (new-session)
   (put-cache (hard-new-session)))
 
-(define (session-init #!optional (uid #f))
+(define (pg-session-init #!optional (uid #f))
    (if uid
        (get-session uid)
        (new-session)))
 
 (define *-clean-con-* '())
 
-(define (clean-sessions)
+(define (pg-clean-sessions)
   (if (null? *-clean-con-*)
       (set! *-clean-con-* (connect (pg-session-dbname)
                                    (pg-session-user)
@@ -99,7 +100,12 @@
   (execute "DELETE FROM expired_sessions" *-clean-con-*))
 
 
-
+(define pg-session-driver
+  (make-session-driver
+   pg-session-init
+   pg-session-identifier
+   pg-session-table
+   pg-clean-sessions))
 
 
 

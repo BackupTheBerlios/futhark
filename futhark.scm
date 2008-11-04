@@ -5,6 +5,7 @@
 ;; (pg-session-dbname "sessions")
 ;; (pg-session-user "francesco")
 
+(current-session-driver file-session-driver)
 ;; (ehwas-pages-compiler "gsc-gambit")
 (ehwas-pages-compile? #t)
 

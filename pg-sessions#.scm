@@ -4,8 +4,9 @@
   pg-session-user
   pg-session-password
 
-  session-init
-  session-identifier
-  session-table
-  clean-sessions
+  pg-session-driver
   ))
+
+
+(include "ehwas-sessions#.scm")
+(current-session-driver pg-session-driver)

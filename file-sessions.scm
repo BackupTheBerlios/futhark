@@ -3,17 +3,18 @@
 (##include "~~/lib/gambit#.scm")
 
 (include "uids#.scm")
+(include "ehwas-sessions#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
-         ;; (block)
-         ;; (not safe)
+         (block)
+         (not safe)
          )
 
 (define file-session-dir (make-parameter #f))
 (define file-session-max-age (make-parameter (* 60 60)))
 
-(define-structure session identifier table)
+(define-structure file-session identifier table)
 
 (define (expired? f)
   (let(
@@ -48,7 +49,7 @@
   (make-table test: string=? init: #f weak-keys: #t  weak-values: #t))
 
 (define (put-cache s)
-  (table-set! *-session-cache-* (session-identifier s) (session-will s))
+  (table-set! *-session-cache-* (file-session-identifier s) (session-will s))
   s)
 
 (define (hard-get-session uid)
@@ -57,16 +58,16 @@
      (if (eq? ex *-expired-*) (hard-new-session)
          (raise ex)))
    (lambda ()
-     (make-session uid (file-get-table uid)))))
+     (make-file-session uid (file-get-table uid)))))
 
 (define (hard-new-session)
-  (make-session (make-uid) (make-table)))
+  (make-file-session (make-uid) (make-table)))
 
 (define (session-will s)
   (make-will
   s
   (lambda (_)
-    (file-save (session-identifier s) (session-table s)))))
+    (file-save (file-session-identifier s) (file-session-table s)))))
    
 (define (lookup-cache uid)
   (let(
@@ -80,12 +81,12 @@
 (define (new-session)
   (put-cache (hard-new-session)))
 
-(define (session-init #!optional (uid #f))
+(define (file-session-init #!optional (uid #f))
   (if uid
       (get-session uid)
       (new-session)))
 
-(define (clean-sessions)
+(define (file-clean-sessions)
   (let(
        (p (open-directory (file-session-dir))))
     (let loop ()
@@ -96,6 +97,13 @@
               (and (expired? file)
                    (delete-file (string-append (file-session-dir) "/" file)))
               (loop)))))))
+
+
+(define file-session-driver
+  (make-session-driver
+   file-session-init
+   file-session-identifier
+   file-session-table
+   file-clean-sessions))
             
-                
-       
+               

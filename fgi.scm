@@ -12,6 +12,7 @@
 (include "ehwas-errors.scm")				
 (include "ehwas-resolver.scm")
 (include "ehwas-server.scm")
+(include "ehwas-sessions.scm")
 (include "ehwas-query.scm")
 
 (include "ehwas-cookies.scm")
@@ -28,4 +29,6 @@
 (include "yera-parser.scm")
 (include "yera-resolver.scm")
 
+(include "postgresql.scm")
+(include "pg-sessions.scm")
 (include "file-sessions.scm")

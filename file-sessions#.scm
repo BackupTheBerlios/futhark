@@ -1,9 +1,8 @@
 (##namespace
  ("file-sessions#"
   file-session-dir
-  
-  session-init
-  session-identifier
-  session-table
-  clean-sessions
+  file-session-driver
   ))
+
+(include "ehwas-sessions#.scm")
+(current-session-driver file-session-driver)

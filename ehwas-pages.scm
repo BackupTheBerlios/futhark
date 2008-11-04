@@ -31,7 +31,7 @@
          "rfc3986#.scm"
          "ehwas-query#.scm"
          "ehwas-cookies#.scm"
-         "file-sessions#.scm"))))
+         "ehwas-sessions#.scm"))))
 
 (define path-separator
   (make-parameter
