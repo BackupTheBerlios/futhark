@@ -20,7 +20,7 @@
        (t0 (time->seconds (file-last-modification-time f)))
        (t1 (time->seconds (current-time))))
     (> (- t1 t0) (file-session-max-age))))
-
+  
 (define (file-save uid tbl)
   (let(
        (f (string-append (file-session-dir) "/" uid ".sss"))
@@ -34,7 +34,9 @@
 (define (file-get-table uid)
   (let(
        (f (string-append (file-session-dir) "/" uid ".sss")))
-    (if (expired? f) (raise *-expired-*)
+    (if (or (not (file-exists? f))
+            (expired? f))
+        (raise *-expired-*)
         (let(
              (img (make-u8vector (file-size f))))
           (call-with-input-file f
