@@ -46,9 +46,9 @@
 
 (define-parser (more-text) 
   (<> (>> (<> (eos) (word "<?scheme")) (return '()))
-      (>> (<- c (<> (char #\") (char #\\)))
-          (<- cs (more-text))
-          (return (cons #\\ (cons c cs))))
+;;       (>> (<- c (<> (char #\") (char #\\)))
+;;           (<- cs (more-text))
+;;           (return (cons #\\ (cons c cs))))
       (>> (<- c (any))
           (<- cs (more-text))
           (return (cons c cs)))))
@@ -58,9 +58,9 @@
       (return (lambda (p)
                 (if (not (null? l))
                     (begin
-                      (display "(echo \"" p)
-                      (display l p)
-                      (display "\")" p)))))))
+                      (display "(echo " p)
+                      (write (list->string l) p)
+                      (display ")" p)))))))
   
 (define-parser (more-string)
   (<> (>> (char #\")
@@ -132,7 +132,7 @@
 ;;         "(include \"" (path-strip-directory if) "\")\n"
 ;;         "response))")
 ;;         op))))
-
+               
 (define (scheme->application if of)
   (call-with-output-file of
     (lambda (op)
@@ -147,7 +147,7 @@
       (newline op)
       (write `(include ,(ehwas-pages-header)) op)
       (newline op)
-      (write `(include ,(path-strip-directory if)) op)
+      (write `(include ,if) op)
       (newline op)
       (display "response))" op))))
   
@@ -243,7 +243,7 @@
           (for-each delete-file (list app obj scm))
           )
         (begin
-          (load scm)
+          (load app)
           (for-each delete-file (list app scm))
           ))
     (cdr (table-ref *-registry-* file))))

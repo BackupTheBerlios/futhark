@@ -7,7 +7,7 @@
 
 (current-session-driver file-session-driver)
 ;; (ehwas-pages-compiler "gsc-gambit")
-(ehwas-pages-compile? #t)
+(ehwas-pages-compile? #f)
 
 (define *-registry-* (make-table))
 
