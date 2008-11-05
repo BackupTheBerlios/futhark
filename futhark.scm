@@ -1,6 +1,3 @@
-(load "fgi")
-(include "fgi#.scm")
-
 (file-session-dir "sessions")
 ;; (pg-session-dbname "sessions")
 ;; (pg-session-user "francesco")
