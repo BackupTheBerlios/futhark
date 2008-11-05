@@ -4,7 +4,10 @@ Download and install Gambit-C scheme System.
 at <http://dynamo.iro.umontreal.ca/~gambit/wiki/index.php/Main_Page>
 
 then Run
-	     gsi futhark
+	     gsi fgi -e "(include \"fgi#.scm\")" futhark.scm
+	     
+	     or run the script fgi.sh
+             
 
 with your browser visit the url
 
@@ -16,3 +19,5 @@ PS: actually only firefox if fully supported
     opera works well, 
     problems with internet explorer but something works too
     more problems with webkit based safari and chrome
+
+send feedbacks to francesco bracchi <frbracch@gmail.com>
