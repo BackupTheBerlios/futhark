@@ -1,20 +1,3 @@
-;; (##namespace
-;;  ("ehwas-request#"
-;;   make-request
-;;   http-request
-;;   request-method
-;;   request-uri
-;;   request-header
-;;   request-uri-string
-;;   request-version
-;;   ;; request-headers
-;;   request-body
-;;   request-path
-;;   request-query
-;;   request-autority
-;;   request-header-ref
-;;  ))
-
 (##namespace
  ("ehwas-request#"
   make-request
