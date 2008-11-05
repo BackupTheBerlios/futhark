@@ -103,9 +103,10 @@
     (if (not (equal? a0 addr))
         (pp '(address not match))
         (begin
+          (pp `(exit ,name))
           (table-set! *users* name)
-          (broadcast (obj ("exitUser" name)))
-          (chat)))))
+          (broadcast (obj ("exitUser" name)))))
+    (chat)))
   
 (define (exit-fail name addr)
   ;; incident will be reported

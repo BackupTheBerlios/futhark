@@ -47,8 +47,26 @@ with (Actors) with (ActorsMatch) with (ActorsTest) with (ActorsRemote) {
 			document.createElement ("br"));
 		    working ();
 		}),     
+		match ({"newUser": {"name": '?name', "address" : '?address'}}, function (bs) {
+		    document.getElementById ("body").appendChild (
+			document.createTextNode (bs.name + " entered now."));
+		    
+		    document.getElementById ("body").appendChild (
+			document.createElement ("br"));
+		    working ();
+		}),     
+		match ({"exitUser": '?name'}, function (bs) {
+		    if (bs.name) {
+			document.getElementById ("body").appendChild (
+			    document.createTextNode (bs.name + " exited now."));
+			
+			document.getElementById ("body").appendChild (
+			    document.createElement ("br"));
+		    }
+		    working ();
+		    }), 
 		otherwise(function (kk) {
-		    if (kk.message) alert (kk.message.body);
+		    alert (kk);
 		    working ();
 		})));
     }
