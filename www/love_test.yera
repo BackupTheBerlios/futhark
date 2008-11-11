@@ -9,14 +9,13 @@ open YeraUtils, MouseEvents;
 files "yera_utils@.yera", "mouse_events@.yera";
 
 
-lt = 0 until lift2 (\t t0 -> t - t0) (futr time) (pres time)          
 
 upto s = st until st >= 1 and pres st
     where 
       st = min 1 s;
     end;
 
-ram tau = upto (lt / tau);
+ram tau = upto (local / tau);
 
 flipFlop t2 _f _g = ff
     where

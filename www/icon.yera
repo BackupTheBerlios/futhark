@@ -8,9 +8,7 @@ upto s = st until st >= 1 and lift0 1
       st = min 1 s;
     end;
 
-loc = local 50;
-
-ram t = upto (loc / t);
+ram t = upto (local / t);
 
 smooth t a b = a + (b - a) * t;
 

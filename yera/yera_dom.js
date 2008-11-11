@@ -23,7 +23,7 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 		    }, __ticks__);
 		    var t = now ();
 		    send_actor (m.from, new Update (m.role, t));
-		    timeUpdate (t, d, h, [m]);
+		    timeUpdate (t, h, [m]);
 		}));
 	}
 		

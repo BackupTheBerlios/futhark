@@ -1,13 +1,10 @@
 -- @author: francesco bracchi <frbracch@gmail.com>
 
-localtime = local 100;
-
 wait = `<img src = "wait.png" style = {opacity: op}/>;
 
 op = 0.5 + 0.5 * k
     where
       k = sin omega;
-      omega = t / tau;
+      omega = time / tau;
       tau = 1000;
-      t = time 100;
     end;

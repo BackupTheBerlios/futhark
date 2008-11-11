@@ -1,16 +1,12 @@
 -- @author: francesco bracchi <frbracch@gmail.com>
 
-t = time 50;
-
-loc = 0 until lift1 (\t0 -> t - t0) (pres t);
 
 upto s = st until st >= 1 and lift0 1
     where 
       st = min 1 s;
     end;
 
-
-ram t = upto (loc / t);
+ram t = upto (local / t);
 
 smooth t a b = a + (b - a) * t;
 
