@@ -1,4 +1,3 @@
-
 files "prelude.yera";
 
 IconI = interface (icon);

@@ -12,10 +12,7 @@ if c l r = (c && [l] || [r]) ! 0;
 
 imp s = s until lift0 null;
 
-local d = 0 until lift2 (\t t0 -> t - t0) (futr t) (pres t)
-    where
-      t = time d;
-    end;
+local = 0 until lift2 (\t t0 -> t - t0) (futr time) (pres time)
 
 step i e = i until e && lift2 step b (futr b);
 

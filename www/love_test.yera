@@ -8,10 +8,9 @@ open YeraUtils, MouseEvents;
 
 files "yera_utils@.yera", "mouse_events@.yera";
 
-local t = 0 until lift2 (\ t t0 -> t - t0) (futr t) (pres t);
 
-lt = local (time (1000 / 30));
-          
+lt = 0 until lift2 (\t t0 -> t - t0) (futr time) (pres time)          
+
 upto s = st until st >= 1 and pres st
     where 
       st = min 1 s;

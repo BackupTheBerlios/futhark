@@ -11,32 +11,35 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 	    }
 	    return r;
 	}
+	
+	var __ticks__ = 1000 / 30;
 
-	var timeUpdateInit = function (d) {
+	var timeUpdateInit = function () {
 	    recv(
 		hasType (Register, function (m) {
 		    var me = self ();
 		    var h = setInterval (function () {
 			send_actor (me, new YeraEvent ("ciao"));
-		    }, d);
+		    }, __ticks__);
 		    var t = now ();
 		    send_actor (m.from, new Update (m.role, t));
 		    timeUpdate (t, d, h, [m]);
 		}));
 	}
 		
-	var timeUpdate = function (t, d, h, ls) {
+	var timeUpdate = function (t, h, ls) {
 	    recv ( 
 		cond (
 		    hasType (Register, function (m) {
 			send_actor (m.from, new Update (m.role, t));
-			timeUpdate (t, d, h, ls.concat ([m]));
+			timeUpdate (t, h, ls.concat ([m]));
 		    }),
 		    hasType (Unregister, function (m) {
 			var ls1 = removeRole (ls, m);
 			if (ls1.length > 0)
-			    timeUpdate (t, d, h, ls1);
+			    timeUpdate (t, h, ls1);
 			clearInterval (h);
+			timeUpdateInit ();
 		    }),
 		    hasType (YeraEvent, function (m) {
 			var t1 = now ();
@@ -44,41 +47,22 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 			    var l = ls [j];
 			    send_actor (l.from, new Update (l.role, t1));
 			}
-			timeUpdate (t1, d, h, ls);
+			timeUpdate (t1, h, ls);
 		    })));
 	}
 
-	var timeSource = function (d) {
-	    return src (function () {
-		timeUpdateInit (d);
-	    });
-	}
+	var timeSource = src (timeUpdateInit);
 
-	var timeState = function (v, s, sd) {
+	var timeState = function (v) {
 	    var r = st (v);
-	    r.addSource (s, be (function(t1) {
-		return timeState (t1, s, sd);
-	    }));
-	    
-	    function setter (j) {
-		return be (function (ev) {
-		    var sd1 = sd.then[j].behavior.apply (ev);
-		    return timeState (sd1.value, timeSource (sd1.value), sd1);
-		})}
-	    
-	    for (var j in sd.then) 
-		r.addSource (sd.then[j].source, setter (j));
+	    r.addSource(timeSource, be (timeState));
 	    return r;
 	}
 	
-	var time = box (function () {
-	    return function (d) {
-		return be (function (ev) {
-		    var sd = unbox (d) . apply (ev);
-		    return timeState (now (), timeSource (sd.value), sd);
-		});
-	    }
-	});
+	var time = box (function () {return be (function (ev) {
+			return timeState (now ());
+		    });
+	    });
 
 	var YeraEvent = function (ev) {
 	    this.event = ev;

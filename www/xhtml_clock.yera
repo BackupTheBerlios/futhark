@@ -1,9 +1,6 @@
-
-now = time (1000 / 4);
-          
-sec = second now;
-min = minute now;
-hor = hour now;
+sec = second time;
+min = minute time;
+hor = hour time;
 
 h0 = floor (hor / 10);
 h1 = hor % 10;

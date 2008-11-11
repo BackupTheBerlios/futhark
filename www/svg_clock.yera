@@ -1,13 +1,7 @@
 
-now = time (1000 / 4);
-now1 = time (1000 / 30);
-
--- now = time 4000;
--- now1 = time 2000;
-
-sec = second now;
-min = minute now;
-hor = hour now;
+sec = second time;
+min = minute time;
+hor = hour time;
 
 cx = 53;
 cy = 53;
@@ -16,7 +10,7 @@ sy = 55;
 r = 50;
    
 
-rot = - (now1 / 100) % 360;
+rot = - (time / 100) % 360;
 
 body = `<g>
        <circle cx = cx cy = cy r = r style = "fill:#f0f0f0;stroke:black;stroke-width:1pt"/> 
