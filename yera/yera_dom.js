@@ -1,5 +1,5 @@
-with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
-    var YeraDom = box (function () {
+with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
+    var YeraDom = function () {
 	
 	var now = function () {return (new Date ()).getTime ()};
 	
@@ -14,7 +14,7 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 	
 	var __ticks__ = 1000 / 30;
 
-	var timeUpdateInit = function () {
+	var timeUpdateSuspended = function () {
 	    recv(
 		hasType (Register, function (m) {
 		    var me = self ();
@@ -39,7 +39,7 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 			if (ls1.length > 0)
 			    timeUpdate (t, h, ls1);
 			clearInterval (h);
-			timeUpdateInit ();
+			timeUpdateSuspended ();
 		    }),
 		    hasType (YeraEvent, function (m) {
 			var t1 = now ();
@@ -51,7 +51,7 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 		    })));
 	}
 
-	var timeSource = src (timeUpdateInit);
+	var timeSource = src (timeUpdateSuspended);
 
 	var timeState = function (v) {
 	    var r = st (v);
@@ -59,10 +59,9 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 	    return r;
 	}
 	
-	var time = box (function () {return be (function (ev) {
-			return timeState (now ());
-		    });
-	    });
+	var time = be (function (ev) {
+	    return timeState (now ());
+	});
 
 	var YeraEvent = function (ev) {
 	    this.event = ev;
@@ -72,13 +71,9 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 	var event_sources = {};
 
 	var eventSource = function (x) {
-	    var s = event_sources [x];
-	    if (! s) s = event_sources [x] = src (function () {
-		eventUpdateInit (x);
-	    });
-	    return s;
+	    return src (function () {eventUpdateSuspended (x)});
 	}
-
+	
 	var registerEvent = window.addEventListener ? 
 	    function (x, h) {
 		window.addEventListener (x, h, false);
@@ -95,7 +90,7 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 		document.detachEvent ("on" + x, h);
 	    };
 	    
-	var eventUpdateInit = function (x) {
+	var eventUpdateSuspended = function (x) {
 	    recv(
 		hasType (Register, function (m) {
 		    var me = self ();
@@ -103,21 +98,21 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 			if (! ev) ev = window.event;
 			if (ev.preventDefault) ev.preventDefault ();
 			else try {ev.returnValue = false;
-				 }catch (x) {};
+				 }catch (ex) {};
 			
 			if (ev.srcElement) try {
 			    ev.target = ev.srcElement;
-			}catch (x) {}
+			}catch (ex) {}
 
 			if (ev.toElement)
 			    if (ev.type == 'mouseout') try {
 				ev.relatedTarget = ev.toElement;
-			    } catch (x) {} else try {ev.target = ev.toElement} catch (x) {};
+			    } catch (ex) {} else try {ev.target = ev.toElement} catch (ex) {};
 			
 			if (ev.fromElement)
 			    if (ev.type == 'mouseout') try {
 				ev.target = ev.fromElement;
-			    } catch (x) {} else try {ev.relatedTarget = ev.fromElement} catch (x) {};
+			    } catch (ex) {} else try {ev.relatedTarget = ev.fromElement} catch (ex) {};
 
 			send_actor (me, new YeraEvent (ev));
 		    }
@@ -127,47 +122,6 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 		}));
 	}
    
-// 	var eventUpdateInit = function (x) {
-// 	    recv(
-// 		hasType (Register, function (m) {
-// 		    var me = self ();
-// 		    var h = function (ev) {
-// 			ev.returnValue = false;
-// 			ev.target = ev.srcElement;
-
-// 			if (ev.toElement)
-// 			    if (ev.type == 'mouseout') 
-// 				ev.relatedTarget = ev.toElement;
-// 			else ev.target = ev.toElement;
-		    
-// 			if (ev.fromElement)
-// 			    if (ev.type == 'mouseout')
-// 				ev.target = ev.fromElement;
-// 			else ev.relatedTarget = ev.fromElement;
-
-// 			send_actor (me, new YeraEvent (ev));
-// 		    }
-// 		    send_actor (m.from, new Update (m.role, null));
-// 		    registerEvent (x, h);
-// 		    eventUpdate (x, h, [m]);
-// 		}));
-// 	}
-   
-// 	var eventUpdateInit = function (x) {
-// 	    recv(
-// 		hasType (Register, function (m) {
-// 		    var me = self ();
-// 		    var h = function (ev) {
-// 			if (! ev) ev = window.event;
-// 			ev.preventDefault ();
-// 			send_actor (me, new YeraEvent (ev));
-// 		    }
-// 		    send_actor (m.from, new Update (m.role, null));
-// 		    registerEvent (x, h);
-// 		    eventUpdate (x, h, [m]);
-// 		}));
-// 	}
-	
 	var eventUpdate = function (x, h, ls) {
 	    recv(
 		cond (
@@ -180,7 +134,7 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
  			if (ls1.length) 
 			    eventUpdate (x, h, ls1);
 			unregisterEvent (x, h);
-			delete event_sources [x];
+			eventUpdateSuspended (x);
 		    }),
 		    hasType (YeraEvent, function (m) {
 			for (var j = 0; j < ls.length; j++) {
@@ -192,31 +146,48 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 		    })));
 	}
 	
-	var event = box (function () {
-	    return function (x) {
-		return be (function (ev) {
-		    var x0 = unbox (x).apply (ev);
-		    return eventState (null, eventSource (x0.value), x0);
-		});
-	    }});
-		       
-	var eventState = function (v, s, x) {
+// 	var event = box (function () {
+// 	    return function (x) {
+// 		return be (function (ev) {
+// 		    var x0 = unbox (x).apply (ev);
+// 		    return eventState (null, eventSource (x0.value), x0);
+// 		});
+// 	    }});
+	 	        
+	var mousedownSource = eventSource ("mousedown");
+	var mouseupSource = eventSource ("mouseup");
+	var mouseclickSource = eventSource ("click");
+	var mouseoutSource = eventSource ("mouseout");
+	var mouseoverSource = eventSource ("mouseover");
+	var mousemoveSource = eventSource ("mousemove");
+	
+	var keyupSource = eventSource ("keyup");
+	var keydownSource = eventSource ("keydown");
+	var keypressSource = eventSource ("keypress");
+    
+	var mousedown = be (function (ev) {return eventState (null, mousedownSource); });
+	var mouseup = be (function (ev) {return eventState (null, mouseupSource); });
+	var mouseclick = be (function (ev) {return eventState (null, mouseclickSource); });
+	var mouseout = be (function (ev) {return eventState (null, mouseoutSource); });
+	var mouseover = be (function (ev) {return eventState (null, mouseoverSource); });
+	var mousemove = be (function (ev) {return eventState (null, mousemoveSource); });
+
+	var keyup = be (function (ev) {return eventState (null, keyupSource); });
+	var keydown = be (function (ev) {return eventState (null, keydownSource); });
+	var keypress = be (function (ev) {return eventState (null, keypressSource); });
+
+	var eventState = function (v, s) {
 	    var r = st (v);
 	    r.addSource (s, be (function (e) {
-		return eventState (e, s, x);
+		return eventState (e, s);
 	    }));
+	     
+// 	    r.getFuture = function () {
+// 		return be (function (ev) {
+// 		    return eventState (null, s);
+// 		});
+// 	    }
 	    
-	    function setter (j) {
-		return be (function (ev) {
-		    var x1 = x.then [j].behavior.apply (ev);
-		    return eventState (v, x1.value == x.value ? s : eventSource (x1.value), x);
-		});
-	    }
-	    
-	    for (var j in x.then)
-		r.addSource (x.then [j].source, setter (j));
-	    
-	    r.isEvent = true;
 	    return r;
 	}
 	
@@ -227,23 +198,29 @@ with (Yera) with (Actors) with (ActorsTest) with (unbox (YeraCore)) {
 	    if (t.parentNode) return really_relative (t.parentNode, x);
 	    return false;
 	}
-	var $unrelative$un = box (function () {
-	    return function (t) {
-		return function (x) {
-		    return really_relative (unbox (t), unbox (x));
-		}
-	    }
-	});
+	var $unrelative$un =really_relative;
 
-	var relative = box (function () {
-	    return unbox (lift2) ($unrelative$un);
-	});
-
-	return {
+	var relative = lift ($unrelative$un);
+	
+	var bindings = {
 	    time: time,
-	    event: event,
 	    $unrelative$un: $unrelative$un,
-	    relative: relative
+	    relative: relative,
+	    mousedown: mousedown,
+	    mouseup: mouseup,
+	    mouseclick: mouseclick,
+	    mouseout: mouseout,
+	    mouseover: mouseover,
+	    mousemove:mousemove,
+	    
+	    keyup: keyup,
+	    keydown: keydown,
+	    keypress: keypress
 	};
-    });
+	
+	var iface = [];
+	for (var j in bindings) iface.push (bindings [j]);
+	
+	return new Struct (new Interface (iface), bindings);
+    }();
 }

@@ -1,6 +1,6 @@
 -- @author francesco bracchi <frbracch@gmail.com>
 
-upto s = st until st >= 1 and lift0 1
+upto s = st untilI st >= 1 and const 1
     where 
       st = min 1 s;
     end;
@@ -9,33 +9,40 @@ ram t = upto (local / t);
 
 smooth t a b = a + (b - a) * t;
 
-title = "" until uevent.title && pres uevent.title;
+title = "" untilI userevent.title && pres userevent.title;
 
-question = "" until uevent.question && pres uevent.question;
+question = "" untilI userevent.question && pres userevent.question;
     
-end_loading = uevent.end_loading;
--- end_loading = uevent;
+end_loading = userevent.end_loading;
+-- end_loading = userevent;
           
-showQuery q ch res = q until ch and (futr res);
+showQuery q ch res = q untilI ch and futr res;
+-- showQuery q ch res = q;
                      
-pcr = 0 until choice and lift0 (ram 2000);
-pcq = 0 until end_loading and lift0 (ram 1000);
+pcr = 0 untilI choice and const (ram 2000);
+pcq = 0 untilI end_loading and const (ram 1000);
 
 res = result pcr;
 
 qry = query pcq;
 
-show = wait until end_loading and lift3 showQuery (futr qry) (futr choice) (futr res);
-
+show = wait untilI end_loading and (lift showQuery) (futr qry) (futr choice) (futr res);
+-- show = wait untilI end_loading and futr qry;
 
 mainDom = 
     `<div class = "poll_box">
     <div class = "title">@title</div>
     <div class = "question">@question</div>
     <br/>
-    @show</div>;
+    @show
+    </div>;
 
 main = {
   domelement: mainDom,
   choice: choice
 };
+
+-- main = {
+--   domelement: wait,
+--   choice: null
+-- };

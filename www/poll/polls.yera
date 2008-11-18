@@ -56,3 +56,10 @@ Main = struct : (main) ->
         Wait, Query, Result;
    files "main.yera";
 end;
+
+
+Test = struct : (main) ->
+   open YeraCore, YeraDom, YeraMath, YeraUserevent,
+        XmlnsXhtml, Query, Result;
+   files "test.yera";
+end;

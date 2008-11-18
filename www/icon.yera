@@ -1,9 +1,8 @@
-
 -- @author Francesco Bracchi
 -- @email frbracch@gmail.com
 -- @desc an icon is a clickable object that makes some special effects.
         
-upto s = st until st >= 1 and lift0 1
+upto s = st untilI st >= 1 and const 1
     where 
       st = min 1 s;
     end;
@@ -33,9 +32,9 @@ clicked src d0 t0 = i until (onclick || onterm || onexit)
       d = smooth r d0 1.2;
       t = smooth r t0 1;
       i = img src d t;
-      onclick = (lbc over i) && lift3 clicked (futr src) (pres d) (pres t);
-      onexit  = (exit i) && lift3 normal (futr src) (pres d) (pres t);
-      onterm  = r == 1 && lift3 entered (futr src) (pres d) (pres t);
+      onclick = (lbc over i) && (lift clicked) (futr src) (pres d) (pres t);
+      onexit  = (exit i) && (lift normal) (futr src) (pres d) (pres t);
+      onterm  = r == 1 && (lift entered) (futr src) (pres d) (pres t);
     end;
        
 normal src d0 t0 = i until onenter
@@ -44,7 +43,7 @@ normal src d0 t0 = i until onenter
       d = smooth r d0 0.8;
       t = smooth r t0 0.5;
       i = img src d t;
-      onenter = (enter i) && lift3 entered (futr src) (pres d) (pres t);
+      onenter = (enter i) && (lift entered) (futr src) (pres d) (pres t);
     end;
 
 entered src d0 t0 = i until (onexit || onclick)
@@ -53,8 +52,8 @@ entered src d0 t0 = i until (onexit || onclick)
       d = smooth r d0 1;
       t = smooth r t0 1;
       i = img src d t;
-      onexit = (exit i) && lift3 normal (futr src) (pres d) (pres t);
-      onclick = (lbc over i) && lift3 clicked (futr src) (pres d) (pres t);
+      onexit = (exit i) && (lift normal) (futr src) (pres d) (pres t);
+      onclick = (lbc over i) && (lift clicked) (futr src) (pres d) (pres t);
     end;
 
 icon src = normal src 0 0;

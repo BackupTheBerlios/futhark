@@ -1,10 +1,10 @@
 -- @author: francesco bracchi <frbracch@gmail.com>
 
-newResult = uevent.newResult;
+newResult = userevent.newResult;
 
-changeResult = uevent.changeResult;
+changeResult = userevent.changeResult;
 
-situation r = r until changeResult and changeResult.name == r.name and lift1 situation (pres changeResult);
+situation r = r untilI changeResult and changeResult.name == r.name and (lift situation) (pres changeResult);
 
 makeDiv as = {
   namespace: xmlns,
@@ -13,7 +13,7 @@ makeDiv as = {
   childs: as
 };
 
-totl n = n until newResult and lift2 tt (pres newResult) (futr n)
+totl n = n untilI newResult and (lift tt) (pres newResult) (futr n)
     where
       tt x y = 
           let x1 = situation x in totl (x1.votes + y);
@@ -36,7 +36,7 @@ st p t s ss = sits p t ss1
       ss1 = concat ss [s2];
     end;
 
-sits p t ss = ss until newResult and lift4 st (futr p) (futr t) (pres newResult) (futr ss);
+sits p t ss = ss untilI newResult and (lift st) (futr p) (futr t) (pres newResult) (futr ss);
                             
 situations p = sits p total [];
           

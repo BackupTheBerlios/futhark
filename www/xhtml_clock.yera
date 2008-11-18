@@ -1,3 +1,7 @@
+xmlns = "http://www.w3.org/1999/xhtml";
+
+local = 0 until (lift \x x0 -> x - x0) (futr time) (pres time);
+
 sec = second time;
 min = minute time;
 hor = hour time;
@@ -19,7 +23,12 @@ style = {
   ,verticalAlign: "middle"
 --  ,opacity: 0.3 
 };
-
+   
 clock = `<center>
        <div style = style>$text_time</div>
        </center>;
+
+
+
+
+

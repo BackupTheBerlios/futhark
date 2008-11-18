@@ -1,10 +1,10 @@
 -- @author: francesco bracchi <frbracch@gmail.com>
 
-wait = `<img src = "wait.png" style = {opacity: op}/>;
-
 op = 0.5 + 0.5 * k
     where
-      k = sin omega;
+      tau = 400;
       omega = time / tau;
-      tau = 1000;
+      k = sin omega;
     end;
+
+wait = `<img src = "wait.png" style = {opacity: op}/>;

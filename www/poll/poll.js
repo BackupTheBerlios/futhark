@@ -1,11 +1,10 @@
 with (Actors) with (ActorsTest) with (ActorsMatch) with (ActorsRemote) with (Yera) {
     
-    ActorsRemote.init ();
     var poller, shower, domUpdater, controller, adapter;
 
     var control = function () {
 	recv(
-	    hasType (Update, function (m){			
+	    hasType (Update, function (m){ 
 		send (domUpdater, m.value.domelement);
 		if (m.value.choice) send (poller, {choice: m.value.choice});
 		control ();
@@ -15,13 +14,13 @@ with (Actors) with (ActorsTest) with (ActorsMatch) with (ActorsRemote) with (Yer
     var adapt = function () {
 	recv (
 	    otherwise (function (m) {
-		userevent.fire ({title: m.title});
-		userevent.fire ({question: m.question});
+		usereventFire ({title: m.title});
+		usereventFire ({question: m.question});
 		for (var j in m.result) {
-		    userevent.fire ({choice: j});
-			    userevent.fire ({newResult: {name: j, votes: m.result [j]}});
+		    usereventFire ({choice: j});
+	            usereventFire ({newResult: {name: j, votes: m.result [j]}});
 		}
-		userevent.fire ({end_loading: true});
+		usereventFire ({end_loading: true});
 		adapt1 (m.title, m.question, m.result);
 	    }));
     }
@@ -30,13 +29,14 @@ with (Actors) with (ActorsTest) with (ActorsMatch) with (ActorsRemote) with (Yer
 	recv (
 	    otherwise (function (m) {
 		result [m.change] = m.votes;
-		userevent.fire ({changeResult: {name: m.change, votes: m.votes}});
+		usereventFire ({changeResult: {name: m.change, votes: m.votes}});
 		adapt1(title, question, result);
 		    }));
     }
     
     window.onload = function () {
-	shower = reactB ('Main.main');
+	ActorsRemote.init ();
+	shower = react (Main.bindings.main);
         domUpdater = idUpdater ('main');
  	controller = actor (control);
 	adapter = actor (adapt);

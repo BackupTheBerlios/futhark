@@ -1,23 +1,26 @@
-files "prelude.yera", "gui.yera";
+files "prelude.yera";
+-- files "gui.yera";
 
 Test = 
     struct : (main) ->
-    open YeraCore, YeraDom, YeraUtils, YeraMath, XmlnsXhtml, MouseEvents, Icon;
+    open YeraCore, YeraDom, YeraUtils, YeraMath, XmlnsXhtml, MouseEvents;
     open YeraUserevent;
 
     files "mouse_events@.yera";
 
-    x = floor (local 200 / 1000);
+    x = floor (local / 1000);
     y = 20;
     z = x + y;
     sum = x + "+" + y + "=" + z;
  
-    e1 = icon "MisterWong.png";
-    e2 = icon "Reddit.png";
+    e1 = `<img src = "MisterWong.png"/>;
+    e2 = `<img src = "Reddit.png"/>;
     
-    elem = e1 until uevent and lift0 e2;
+    o = {a: 1, b: 2};
 
-    main = `<div>@elem<br/>@sum</div>;
+    elem = e1 until (lbc out e1) and const e2;
+
+    main = elem;
            
-    -- main = `<div>@uevent</div>;
+    -- main = `<div>@userevent</div>;
 end;

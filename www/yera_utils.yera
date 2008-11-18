@@ -2,19 +2,17 @@
 -- @author Francesco Bracchi
 -- @email frbracch@gmail.com
 
-switch i e = i until e && lift2 switch (pres e) (futr e);
-
-of f a = f a;
+switch i e = i until e && (lift $switch) (pres e) (futr e);
 
 id x = x;
 
 if c l r = (c && [l] || [r]) ! 0;
 
-imp s = s until lift0 null;
+imp s = s until const null;
 
-local = 0 until lift2 (\t t0 -> t - t0) (futr time) (pres time);
+local = 0 until (lift \t t0 -> t - t0) (futr time) (pres time);
 
-step i e = i until e && lift2 step b (futr b);
+step i e = i until e && (lift $step) b (futr b);
 
-then b f = b and lift1 f (pres b);
+then b f = b and (lift f) (pres b);
 

@@ -6,7 +6,7 @@
     <script type = "text/ecmascript" src = "yera/rts.js"></script>
     <script type = "text/ecmascript" src = "gui.yera?action=code&amp;type=ecmascript"></script>
   </head>
-  <body onload = "Yera.connect ('Test.main', 'main')">
+  <body onload = "Yera.connect (Test.bindings.main, 'main')">
     <div id = "main"/>
     <h4 align = "center">gui.yera</h4>
     <pre><![CDATA[

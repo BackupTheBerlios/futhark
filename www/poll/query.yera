@@ -1,28 +1,5 @@
 -- @author: francesco bracchi <frbracch@gmail.com>
-newChoice = uevent.choice;
-
--- as a recursive pattern create some sort of combinator.
-accum s = s until new
-    where
-      new = newChoice and lift2 accumulate (pres newChoice) (futr s);
-      accumulate n s0 = accum s1
-          where
-            btn = button n;
-            s1 = {
-              available: concat (s0.available) [btn],
-              choice: (s0.choice) or (lbc over btn and n)
-            };
-          end;
-    end;
-
-choices = accum {
-            available: [],
-            choice: false
-};
-
-available = choices.available;
-
-choice = choices.choice;
+newChoice = userevent.choice;
 
 makeDiv p as = {
   namespace: xmlns,
@@ -33,4 +10,17 @@ makeDiv p as = {
   childs: as
 };
 
-query p = makeDiv p available;
+on_newchoice s0 new = 
+    let btn = button new;
+        a1 = s0!"available";
+        avl = concat a1 [btn];
+        chc = s0.choice or (lbc over btn) and new;
+    in accumState {available: avl, choice: chc};
+    
+accumState s0 = s0 untilI newChoice and (lift on_newchoice) (futr s0) (pres newChoice);
+
+state = accumState {available: [], choice: false};
+
+query p = makeDiv p state.available;
+
+choice = state.choice;

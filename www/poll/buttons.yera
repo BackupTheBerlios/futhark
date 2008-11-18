@@ -1,7 +1,6 @@
 -- @author: francesco bracchi <frbracch@gmail.com>
 
-
-upto s = st until st >= 1 and lift0 1
+upto s = st untilI st >= 1 and const 1
     where 
       st = min 1 s;
     end;
@@ -19,24 +18,24 @@ outColor = rgb 250 250 250;
 
 overColor = rgb 0 0 120;
 
-buttonOver a = b0 until onexit
+buttonOver a = b0 untilI onexit
     where
       b0 = btn a overColor;
-      onexit = (exit b0) and lift1 buttonOut (futr a);
+      onexit = (exit b0) and (lift buttonOut) (futr a);
     end;
 
-buttonOut a = b0 until onenter
+buttonOut a = b0 untilI onenter
     where
       col = colorTrans (ram 500) overColor outColor;
       b0 = btn a col;
-      onenter = (enter b0) and lift1 buttonOver (futr a);
+      onenter = (enter b0) and (lift buttonOver) (futr a);
     end;
 
 -- buttonOut a = b0 until onenter
 --     where
 --       col = colorTrans (ram 1000) overColor outColor;
 --       b0 = btn a col;
---       onenter = (enter b0) and lift1 buttonOver (futr a);
+--       onenter = (enter b0) and (lift buttonOver) (futr a);
 --     end;
 
 button a = buttonOut a;

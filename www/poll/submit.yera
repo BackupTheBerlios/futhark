@@ -1,9 +1,9 @@
 
-title = "" until uevent.title;
+title = "" untilI userevent.title;
 
-question = "" until uevent.question;
+question = "" untilI userevent.question;
 
-opts = [] until uevent.options;
+opts = [] untilI userevent.options;
 
 fn s = _`<div>@s</div>;
 

@@ -1,31 +1,8 @@
 with (Yera) with (Actors) with (ActorsTest) {
-
-    var userevent = (function () {
-	var listeners = [];
-	var addListener = function (f) {
-	    listeners.push (f);
-	}
-	
-	var removeListener = function (f) {
-	    for (var j = 0; j < listeners.length; j++)
-		if (listeners [j] == f) return listeners.splice (j, 1);
-	};
-	
-	var fire = function (m) {
-	    for (var j = 0; j < listeners.length; j++)
-		listeners [j] (m);
-	}
-	
-
-	return {
-	    addListener: addListener,
-	    removeListener: removeListener,
-	    fire: fire
-	};
-    }) ();
-	
-
-    var YeraUserevent = box (function () {
+    var usereventFire = function (ev) {
+	throw "uninitialized fire action";
+    };
+    var YeraUserevent = function () {
 	
 	var removeRole = function (ls, m) {
 	    var r = [];
@@ -38,18 +15,19 @@ with (Yera) with (Actors) with (ActorsTest) {
 	
 	var YeraUserevent = function (ev) {
 	    this.event = ev;
-	    this.name = "YeraUserevent";
 	}
 
-	var usereventUpdate = function (h, ls) {
+	YeraUserevent.prototype.name = "YeraUserevent";
+
+	var usereventUpdate = function (ls) {
 	    recv(
 		cond (
 		    hasType (Register, function (m) {
 			send_actor (m.from, new Update (m.role, null));
-			usereventUpdate (h, ls.concat ([m]));
+			usereventUpdate (ls.concat ([m]));
 		    }),
 		    hasType (Unregister, function (m) {
-			usereventUpdate (h, removeRole (ls, m));
+			usereventUpdate (removeRole (ls, m));
 		    }),
 		    hasType (YeraUserevent, function (m) {
 			for (var j = 0; j < ls.length; j++) {
@@ -57,40 +35,41 @@ with (Yera) with (Actors) with (ActorsTest) {
 			    send_actor (l.from, new Update (l.role, m.event));
 			    send_actor (l.from, new Update (l.role, null));
 			}
-			usereventUpdate (h, ls);
+			usereventUpdate (ls);
 		    }),
 		    otherwise (function (m) {
-			usereventUpdate (h, ls);
+			usereventUpdate (ls);
 		    })));
 	}
 	
 	var usereventSource = src (function () {
 	    var me = self ();
-	    var h = function (m) {
+	    usereventFire = function (m) {
 		send_actor (me, new YeraUserevent (m));
 	    }
-	    userevent.addListener (h);
-	    usereventUpdate (h, []);
+	    
+	    usereventUpdate ([]);
 	});
-		
 
 	var usereventState = function (v0) {
 	    var r = st (v0);
-	    r.addSource (usereventSource, be (function (ev) {
-		return usereventState (ev);
-	    }));
-	    r.isEvent = true;
+	    r.addSource (usereventSource, be (usereventState));
+	    // r.isEvent = true;
+	    r.getFuture = function () {
+		return be (function (ev) {
+		    return usereventState(null);
+		});
+	    }
+		    
 	    return r;
 	};
 
-	var uevent = box (function () {
-	    return be (function (ev) {
-		return usereventState (null);
-	    })
-	});
+	var userevent = be (usereventState);
 	
-	return {
-	    uevent: uevent
-	};
-    });
+	return new Struct (
+	    new Interface (["uevent"]),
+	    {
+		userevent: userevent
+	    });
+    }();
 }

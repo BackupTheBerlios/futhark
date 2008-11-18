@@ -1,16 +1,16 @@
-files "prelude.yera";
+-- files "prelude.yera";
 
 ClockI = interface (clock);
  
 SvgClock = 
     struct : ClockI ->
-    open YeraCore, YeraDom, YeraMath, XmlnsXLink, XmlnsSvg;
+    open YeraCore, YeraDom, YeraMath;
     files "svg_clock.yera";
 end;
 
 XhtmlClock =
     struct : ClockI ->
-    open YeraCore, YeraDom, YeraMath, XmlnsXLink, XmlnsXhtml;
+    open YeraCore, YeraDom, YeraMath;
     files "xhtml_clock.yera";
 end;
         

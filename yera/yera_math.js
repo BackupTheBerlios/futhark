@@ -1,236 +1,100 @@
 with (Yera) {
-    var YeraMath = box (function () {
-	with (unbox (YeraCore)) {
+    var YeraMath = function () {
+	with (YeraCore.bindings) {
 	    
-	    var $unpi$un = box (function () {
-		return Math.PI;
-	    });
+	    var $unpi$un = Math.PI;
 
-	    var pi = box (function () {
-		return unbox (lift0) ($unpi$un);
-	    });
+	    var pi = $const ($unpi$un);
 
-	    var $une$un = box (function () {
-		return Math.E;
-	    });
+	    var $une$un = Math.E;
 
-	    var e = box (function () {
-		return unbox (lift0) ($une$un);
-	    });
+	    var e = $const ($une$un);
 
-	    var $unminValue$un = box (function () {
-		return Number.MIN_VALUE;
-	    });
+	    var $unminValue$un = Number.MIN_VALUE;
 
-	    var minValue = box (function () {
-		return unbox (lift0) ($unminValue$un);
-	    });
+	    var minValue = $const ($unminValue$un);
 
-	    var $unmaxValue$un = box (function () {
-		return Number.MAX_VALUE;
-	    });
+	    var $unmaxValue$un = Number.MAX_VALUE;
 
-	    var maxValue = box (function () {
-		return unbox (lift0) ($unmaxValue$un);
-	    });
+	    var maxValue = $const ($unmaxValue$un);
 	    
-	    var $unNaN$un = box (function () {
-		return Number.NaN;
-	    });
+	    var $unNaN$un = Number.NaN;
 
-	    var NaN = box (function () {
-		return unbox (lift0) ($unNaN$un);
-	    });
+	    var NaN = $const ($unNaN$un);
 
-	    var $uninfinity$un = box (function () {
-		return Number.POSITIVE_INFINITY;
-	    });
+	    var $uninfinity$un = Number.POSITIVE_INFINITY;
 
-	    var infinity = box (function () {
-		return unbox (lift0) ($uninfinity$un);
-	    });
+	    var infinity = $const ($uninfinity$un);
 
-	    var abs$un = box (function () {
-		return function (x) {
-		    return Math.abs (unbox (x));
-		}
-	    });
-
-	    var abs = box (function () {
-		return unbox (lift1) (abs$un);
-	    });
-
-	    var sin$un = box (function () {
-		return function (x) {
-		    return Math.sin (unbox (x));
-		}
-	    });
-
-	    var sin = box (function () {
-		return unbox (lift1) (sin$un);
-	    });
-
-	    var cos$un = box (function () {
-		return function (x) {
-		    return Math.cos (unbox (x));
-		}
-	    });
-
-	    var cos = box (function () {
-		return unbox (lift1) (cos$un);
-	    });
+	    var abs$un = Math.abs;
 	    
-	    var tan$un = box (function () {
-		return function (x) {
-		    return Math.tan (unbox (x));
-		}
-	    });
+	    var abs = lift (abs$un);
 
-	    var tan = box (function () {
-		return unbox (lift1) (tan$un);
-	    });
+	    var sin$un = Math.sin;
+
+	    var sin = lift (sin$un);
+
+	    var cos$un = Math.cos;
+
+	    var cos = lift (cos$un);
 	    
-	    var asin$un = box (function () {
-		return function (x) {
-		    return Math.asin (unbox (x));
-		}
-	    });
+	    var tan$un = Math.tan;
 
-	    var asin = box (function () {
-		return unbox (lift1) (asin$un);
-	    });
-
-	    var acos$un = box (function () {
-		return function (x) {
-		    return Math.acos (unbox (x));
-		}
-	    });
-
-	    var acos = box (function () {
-		return unbox (lift1) (acos$un);
-	    });
+	    var tan = lift (tan$un);
 	    
-	    var atan$un = box (function () {
-		return function (x) {
-		    return Math.atan (unbox (x));
-		}
-	    });
+	    var asin$un = Math.asin;
 
-	    var atan = box (function () {
-		return unbox (lift1) (atan$un);
-	    });
+	    var asin = lift (asin$un);
 
-	    var atan2$un = box (function () {
-		return function (x) {
-		    return Math.atan2 (unbox (x));
-		}
-	    });
+	    var acos$un = Math.acos;
 
-	    var atan2 = box (function () {
-		return unbox (lift1) (atan2$un);
-	    });
-
-	    var exp$un = box (function () {
-		return function (x) {
-		    return Math.exp (unbox (x));
-		}
-	    });
-
-	    var exp = box (function () {
-		return unbox (lift1) (exp$un);
-	    });
-
-	    var log$un = box (function () {
-		return function (x) {
-		    return Math.log (unbox (x));
-		}
-	    });
-
-	    var log = box (function () {
-		return unbox (lift1) (log$un);
-	    });
-
-	    var ceil$un = box (function () {
-		return function (x) {
-		    return Math.ceil (unbox (x));
-		}
-	    });
-
-	    var ceil = box (function () {
-		return unbox (lift1) (ceil$un);
-	    });
-
-	    var floor$un = box (function () {
-		return function (x) {
-		    return Math.floor (unbox (x));
-		}
-	    });
-
-	    var floor = box (function () {
-		return unbox (lift1) (floor$un);
-	    });
-
-	    var round$un = box (function () {
-		return function (x) {
-		    return Math.round (unbox (x));
-		}
-	    });
-
-	    var round = box (function () {
-		return unbox (lift1) (round$un);
-	    });
+	    var acos = lift (acos$un);
 	    
-	    var $unsqrt$un = box (function () {
-		return function (x) {
-		    return function (y) {
-			return Math.sqrt (unbox (x), unbox (y));
-		    }
-		}
-	    });
+	    var atan$un =Math.atan;
 
-	    var sqrt = box (function () {
-		return unbox (lift2) ($unsqrt$un);
-	    });
+	    var atan = lift (atan$un);
 
-	    var $unmax$un = box (function () {
-		return function (x) {
-		    return function (y) {
-			return Math.max (unbox (x), unbox (y));
-		    }
-		}
-	    });
+	    var atan2$un = Math.atan2
 
-	    var max = box (function () {
-		return unbox (lift2) ($unmax$un);
-	    });
+	    var atan2 = lift (atan2$un);
 
-	    var $unmin$un = box (function () {
-		return function (x) {
-		    return function (y) {
-			return Math.min (unbox (x), unbox (y));
-		    }
-		}
-	    });
+	    var exp$un = Math.exp;
 
-	    var min = box (function () {
-		return unbox (lift2) ($unmin$un);
-	    });
+	    var exp = lift (exp$un);
 
-	    var $unpow$un = box (function () {
-		return function (x) {
-		    return function (y) {
-			return Math.pow (unbox (x), unbox (y));
-		    }
-		}
-	    });
+	    var log$un = Math.log;
 
-	    var pow = box (function () {
-		return unbox (lift2) ($unpow$un);
-	    });
+	    var log = lift (log$un);
 
+	    var ceil$un = Math.ceil;
 
+	    var ceil = lift (ceil$un);
+
+	    var floor$un = Math.floor;
+
+	    var floor = lift (floor$un);
+
+	    var round$un = Math.round;
+
+	    var round = lift (round$un);
 	    
-	    return {
+	    var $unsqrt$un = Math.sqrt;
+	    
+	    var sqrt = lift ($unsqrt$un);
+
+	    var $unmax$un = Math.max;
+
+	    var max = lift ($unmax$un);
+	    
+	    var $unmin$un = Math.min;
+
+	    var min = lift ($unmin$un);
+
+	    var $unpow$un = Math.pow;
+
+	    var pow = lift ($unpow$un);
+	    
+	    var bindings = {
 
 		$unpi$un: $unpi$un,
 		$une$un: $une$un, 
@@ -284,7 +148,11 @@ with (Yera) {
 		max:max,
 		pow:pow
 	    };
+	    
+	    var iface = [];
+	    for (var j in bindings) iface.push (j);
+	    
+	    return new Struct (new Interface (iface), bindings); 
 	}
-    });
+    }();
 }
-	

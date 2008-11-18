@@ -1,21 +1,5 @@
 (##namespace
  ("yera-compile#"
-
-  
-  expr-lazy->eager
-  let-lazy->eager
-  bindings-lazy->eager
-  lambda-lazy->eager
-  array-lazy->eager
-  object-lazy->eager
-  symbol-lazy->eager
-  value-lazy->eager
-  call-lazy->eager
-  open-lazy->eager
-  interface-lazy->eager
-  struct-lazy->eager
-
-  eager-simplify-boxes
   
   expr-compile
   let-compile

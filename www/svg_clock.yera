@@ -1,3 +1,6 @@
+xmlns = "http://www.w3.org/2000/svg";
+
+xmlns_xlink = "http://www.w3.org/1999/xlink";
 
 sec = second time;
 min = minute time;
@@ -47,6 +50,6 @@ s1 = sec % 10;
 
 text_time = "" + h0 + h1 + ":" + m0 + m1 + ":" + s0 + s1;
 
-txt = `<text x = "31" y = "75" style = "fill:#FF7777;font-size:6pt">$text_time</text>;
+txt = `<text x = "31" y = "75" style = "fill:#FF7777;font-size:6pt">@text_time</text>;
 
 clock = `<g transform = "scale(1.5)">@body @txt @l0 @l1 @l2</g>; 

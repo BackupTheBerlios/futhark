@@ -3,10 +3,17 @@
 <html xmlns = "http://www.w3.org/1999/xhtml">
   <head>
   <script type = "text/ecmascript" src = "gebo/rts.js"></script>
-  <script type = "text/ecmascript" src = "yera/rts.js"></script>
+  <script type = "text/ecmascript" src = "yera/rts.js"></script> 
   <script type = "text/ecmascript" src = "clock.yera?action=code&amp;type=ecmascript"></script>
+  <!-- <script type = "text/ecmascript">
+    with (Yera) with (YeraCore.bindings) with (YeraMath.bindings) with (YeraDom.bindings){
+	var ll = lift ($mn);
+	var local = until ($const(0), lift ($mn) (futr (time), pres (time)));
+	var clock = local;
+    }
+  </script> -->
   </head>
-  <body onload = "Yera.connect ('XhtmlClock.clock', 'main')">
+  <body onload = "Yera.connect (XhtmlClock.bindings.clock, 'main')">
     <div id = "main">Ciao</div>
     <h3>Yera source:</h3>
   <pre>
