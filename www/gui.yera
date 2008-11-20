@@ -37,14 +37,17 @@ Test =
 
     i3 = icon "Yellow.png";
 
-    count n ev = n until ev && (lift count) (pres (n + 1)) (futr ev);
+    count n i = n until (lbc over i) && (lift \n i -> count (n + 1) i) (pres n) (futr i);
 
-    counter ev = count 0 ev;
+    counter i = count 0 i;
 
-    c0 = counter (lbc over i0);
-    c1 = counter (lbc over i1);
-    c2 = counter (lbc over i2);
-    c3 = counter (lbc over i3);
+    c0 = counter i0;
+
+    c1 = counter i1;
+
+    c2 = counter i2;
+
+    c3 = counter i3;
 
     main = `<center><table bgcolor = "#eeeeee" width = "300">
            <tr height = "65">

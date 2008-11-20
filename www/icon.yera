@@ -2,7 +2,7 @@
 -- @email frbracch@gmail.com
 -- @desc an icon is a clickable object that makes some special effects.
         
-upto s = st untilI st >= 1 and const 1
+upto s = st until st >= 1 and const 1
     where 
       st = min 1 s;
     end;
