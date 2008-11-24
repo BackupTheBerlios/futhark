@@ -9,9 +9,10 @@
     }
     </style>
   </head>
-    <body onunload = "ActorsRemote.send (chatroom, {'exit': {'name': name, 'address' : main_actor}})">
+    <body onunload = "">
       <div><b class = "nick" id = "nick"></b>
-	<input type = "text" id = "message" onchange = "sendMessage()" width = "60"/>
+	<input type = "text" id = "message" onchange = "sendMessage ()" width = "60"/>
+	<input type = "button" onclick = "sendMessage ()" value = "send!"/>
        </div> 
       <div style = "height:200px;width:300px;overflow:auto"><pre id = "body" style = "text-align:left"/></div>
   </body>

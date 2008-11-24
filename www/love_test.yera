@@ -56,8 +56,8 @@ heart color =
        height = l
        transform = tr />;
     
-yellow = heart "Yellow";
-blue = heart "Blue";
+yellow = heart "Smiley";
+blue = heart "Smiley Sad";
 
 ff t2 = flipFlop t2 yellow blue;
 

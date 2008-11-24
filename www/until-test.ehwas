@@ -1,0 +1,23 @@
+<?xml version = "1.0" ?>
+<?scheme (header-set! "Content-type" "application/xhtml+xml")?>
+
+<html xmlns = "http://www.w3.org/1999/xhtml">
+  <head>
+
+  <script type = "text/ecmascript" src = "gebo/rts.js"></script>
+  <script type = "text/ecmascript" src = "yera/rts.js"></script> 
+  <script type = "text/ecmascript" src = "until_test.yera?action=code&amp;type=ecmascript"></script>
+  </head>
+<body onload = "Yera.connect (main, 'main')">
+  <div id = "main"/>
+  <h3>Yera source:</h3>
+  <pre>
+
+<![CDATA[<?scheme 
+	 (call-with-input-file "www/until_test.yera"
+	  (lambda (p) (echo (read-line p #\nul))))
+	 ?>]]>
+  </pre>
+
+</body>
+</html>

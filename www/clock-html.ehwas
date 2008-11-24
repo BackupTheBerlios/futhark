@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-
-<html xmlns = "http://www.w3.org/1999/xhtml">
+<html>
   <head>
   <script type = "text/ecmascript" src = "gebo/rts.js"></script>
   <script type = "text/ecmascript" src = "yera/rts.js"></script> 
@@ -17,7 +15,7 @@
     <div id = "main">Ciao</div>
     <h3>Yera source:</h3>
   <pre>
-    <![CDATA[<?scheme 
+<![CDATA[<?scheme 
 	 (call-with-input-file "www/xhtml_clock.yera"
 	  (lambda (p) (echo (read-line p #\nul))))
 	 ?>]]>
