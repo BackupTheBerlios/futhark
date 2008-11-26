@@ -66,17 +66,28 @@
      spr
      fsr)))
      
-
-(define server
-  (make-server
-   #f 1080
+(define resolver
    (make-guarded-resolver
     (orelse-resolver
      (serve-dir "www")
      gebo-resolver
      registry-resolver
-     not-found-resolver))))
+     not-found-resolver)))
 
+(define (handle-star?)
+  (with-exception-catcher
+   (lambda (_) #f)
+   (lambda () 
+     (close-port (open-tcp-server
+                  (list
+                   server-address: "*"
+                   port-number: 1080)))
+     #t)))
+   
+(define server
+  (if (handle-star?) (make-server "*" 1080 resolver)
+      (make-server #f 1080 resolver)))
+ 
 (define (echo)
   (let(
        (c (thread-receive)))
