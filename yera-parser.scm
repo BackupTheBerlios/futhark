@@ -504,7 +504,7 @@
          (let(
               (ns  (if (null? (cadr a)) `(const "") (symbol-append 'xmlns_ (cadr a)))))
            `(lift-object
-             (obj (namespace ,ns)
+             (obj (namespaceURI ,ns)
                   (name (const ,(symbol->string (caddr a))))
                   (value ,(cadddr a))))))
        as))
@@ -534,10 +534,10 @@
                           (let(
                                (lo
                                 `(lift-object
-                                  (obj (namespace ,ns)
-                                       (nodetype (const ,(symbol->string (cadr n))))
+                                  (obj (namespaceURI ,ns)
+                                       (nodeName (const ,(symbol->string (cadr n))))
                                        (attributes (lift-array (arr ,@as)))
-                                       (childs (const (arr)))))))
+                                       (childNodes (const (arr)))))))
                             (if (null? bs) lo `(let ,bs ,lo)))))
          (>> (char #\>)
              (yera-space)
@@ -546,10 +546,10 @@
               (let(
                    (lo
                     `(lift-object
-                      (obj (namespace ,ns)
-                           (nodetype (const ,(symbol->string (cadr n))))
+                      (obj (namespaceURI ,ns)
+                           (nodeName (const ,(symbol->string (cadr n))))
                            (attributes (lift-array (arr ,@as)))
-                           (childs (lift-array (arr ,@es)))))))
+                           (childNodes (lift-array (arr ,@es)))))))
                 (if (null? bs) lo `(let ,bs ,lo)))))))))
 
 (define-parser (xml-close t)
