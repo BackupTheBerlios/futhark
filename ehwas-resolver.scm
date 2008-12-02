@@ -1,5 +1,3 @@
-
-
 (##namespace ("ehwas-resolver#"))
 
 (##include "~~/lib/gambit#.scm")
@@ -257,11 +255,9 @@
                       (request-header request)
                       (request-port request)))))))
 
-
 (define (allow fn resolver)
   (lambda (request)
     (and (fn request) (resolver request))))
-
 
 (define (deny fn resolver)
   (allow

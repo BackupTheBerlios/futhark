@@ -1,31 +1,11 @@
-<html xmlns = "http://www.w3.org/1999/xhtml">
+ <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd"> 
+<html>
   <head>
-    <script type = "text/ecmascript" src = "gebo/rts.js"></script>
-    <script type = "text/ecmascript">
-    with (Actors) with (ActorsTest) with (ActorsRemote) {
-        ActorsRemote.init ();
-	var echo = get ("registry/echo");
-	var write = function (n) {
-	    if (n >= 0) {
-		send (echo, [self (), "ciao " + n]);
-		document.getElementById ("main").appendChild (document.createTextNode ("I've sent: ciao" + n));
-		document.getElementById ("main").appendChild (document.createElement ("br"));
-		
-		recv (
-		otherwise (function (m) {
-		    document.getElementById ("main").appendChild (document.createTextNode ("SERVER RESPONSE: "));
-		    document.getElementById ("main").appendChild (document.createTextNode (m));
-		    document.getElementById ("main").appendChild (document.createElement ("br"));
-		    return write (n - 1);
-		}));
-	    }
-	};
-
-    }
-    </script>
+    <script type = "text/javascript" src = "gebo/rts.js"></script>
+    <script type = "text/javascript" src = "gebo-test.js"></script>
   </head>
-    <body onload = "Actors.actor (function () {write (10)})">
-    <div id = "main">
-    </div>
+    <body>
+    <div id = "main"></div>
   </body>
 </html>

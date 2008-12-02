@@ -3,7 +3,7 @@ files "gui.yera";
 
 Test = 
     struct : (main) ->
-    open YeraCore, YeraDom, YeraUtils, YeraMath, XmlnsXhtml, MouseEvents;
+    open YeraCore, YeraDom, YeraUtils, YeraMath, YeraHtml, MouseEvents;
     open YeraUserevent, Icon;
 
     files "mouse_events@.yera";

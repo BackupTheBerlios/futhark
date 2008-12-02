@@ -1,6 +1,5 @@
-with (Yera) {
-    var YeraMath = function () {
-	with (YeraCore.bindings) {
+var YeraMath = function () {
+	with (Yera) with (YeraCore.bindings) {
 	    
 	    var $unpi$un = Math.PI;
 
@@ -154,5 +153,4 @@ with (Yera) {
 	    
 	    return new Struct (new Interface (iface), bindings); 
 	}
-    }();
-}
+}();

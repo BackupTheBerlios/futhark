@@ -67,12 +67,13 @@
      fsr)))
      
 (define resolver
-   (make-guarded-resolver
-    (orelse-resolver
-     (serve-dir "www")
-     gebo-resolver
-     registry-resolver
-     not-found-resolver)))
+  (make-guarded-resolver
+   (orelse-resolver
+;;     (make-cached-resolver (serve-dir "www"))
+    (serve-dir "www")
+    gebo-resolver
+    registry-resolver
+    not-found-resolver)))
 
 (define (handle-star?)
   (with-exception-catcher
@@ -116,8 +117,6 @@
 
 (table-set! *-registry-* '("poll")
             (lambda (r) (json-response r poll#*poll*)))
-
-
 
 (pp 'starting)
 (start! server)

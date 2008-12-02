@@ -1,7 +1,7 @@
-with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
-    var YeraDom = function () {
+var YeraDom = function () {
+    with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 	
-	var now = function () {return (new Date ()).getTime ()};
+	var now = function () {return (new Date ()).getTime ();};
 	
 	var removeRole = function (ls, m) {
 	    var r = [];
@@ -10,7 +10,7 @@ with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 		if (l . from != m.from || l.role != m.role) r.push (l);
 	    }
 	    return r;
-	}
+	};
 	
 	var __ticks__ = 1000 / 30;
 
@@ -25,7 +25,7 @@ with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 		    send_actor (m.from, new Update (m.role, t));
 		    timeUpdate (t, h, [m]);
 		}));
-	}
+	};
 		
 	var timeUpdate = function (t, h, ls) {
 	    recv ( 
@@ -49,7 +49,7 @@ with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 			}
 			timeUpdate (t1, h, ls);
 		    })));
-	}
+	};
 
 	var timeSource = src (timeUpdateSuspended);
 
@@ -57,7 +57,7 @@ with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 	    var r = st (v);
 	    r.addSource(timeSource, be (timeState));
 	    return r;
-	}
+	};
 	
 	var time = be (function (ev) {
 	    return timeState (now ());
@@ -66,13 +66,13 @@ with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 	var YeraEvent = function (ev) {
 	    this.event = ev;
 	    this.name = "YeraEvent";
-	}
+	};
 	
 	var event_sources = {};
 
 	var eventSource = function (x) {
-	    return src (function () {eventUpdateSuspended (x)});
-	}
+	    return src (function () {eventUpdateSuspended (x);});
+	};
 	
 	var registerEvent = window.addEventListener ? 
 	    function (x, h) {
@@ -81,7 +81,7 @@ with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
             function (x, h) {
 		document.attachEvent ("on" + x, h);
 	    };
-
+	
 	var unregisterEvent = window.removeEventListener ? 
 	    function (x, h) {
 		window.removeEventListener (x, h, false);
@@ -90,6 +90,57 @@ with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 		document.detachEvent ("on" + x, h);
 	    };
 	    
+// 	var eventUpdateSuspended = function (x) {
+// 	    recv(
+// 		hasType (Register, function (m) {
+// 		    var me = self ();
+// 		    var h = function (ev) {
+// 			if (! ev) ev = window.event;
+// 			if (ev.preventDefault) ev.preventDefault ();
+// 			else try {
+// 			    ev.returnValue = false;
+// 			}catch (ex) {
+// 			    null;
+// 			};
+			
+// 			if (ev.srcElement) try {
+// 			    ev.target = ev.srcElement;
+// 			}catch (ex) {
+// 			    null;
+// 			};
+
+// 			if (ev.toElement) {
+// 			    if (ev.type == 'mouseout') try {
+// 				ev.relatedTarget = ev.toElement;
+// 			    } catch (ex) {
+// 				null;
+// 			    };
+// 			} else try {
+// 			    ev.target = ev.toElement;
+// 			} catch (ex) {
+// 			    null;
+// 			};
+
+// 			if (ev.fromElement) {
+// 			    if (ev.type == 'mouseover') try {
+// 				ev.target = ev.fromElement;
+// 			    } catch (ex) {
+// 				null;
+// 			    };
+// 			} else try {
+// 			    ev.relatedTarget = ev.fromElement;
+// 			} catch (ex) {
+// 			    null;
+// 			};
+
+// 			send_actor (me, new YeraEvent (ev));
+// 		    };
+// 		    send_actor (m.from, new Update (m.role, null));
+// 		    registerEvent (x, h);
+// 		    eventUpdate (x, h, [m]);
+// 		}));
+// 	};
+  
 	var eventUpdateSuspended = function (x) {
 	    recv(
 		hasType (Register, function (m) {
@@ -97,30 +148,21 @@ with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 		    var h = function (ev) {
 			if (! ev) ev = window.event;
 			if (ev.preventDefault) ev.preventDefault ();
-			else try {ev.returnValue = false;
-				 }catch (ex) {};
+			else ev.returnValue = false;
 			
-			if (ev.srcElement) try {
-			    ev.target = ev.srcElement;
-			}catch (ex) {}
+			if (! ev.target) ev.target = ev.srcElement;
 
-			if (ev.toElement)
-			    if (ev.type == 'mouseout') try {
-				ev.relatedTarget = ev.toElement;
-			    } catch (ex) {} else try {ev.target = ev.toElement} catch (ex) {};
+			if (window.event)
+			    ev.relatedTarget = ev.type == 'mouseover' ? ev.fromElement : ev.toElement;
 			
-			if (ev.fromElement)
-			    if (ev.type == 'mouseout') try {
-				ev.target = ev.fromElement;
-			    } catch (ex) {} else try {ev.relatedTarget = ev.fromElement} catch (ex) {};
-
 			send_actor (me, new YeraEvent (ev));
-		    }
+		    };
 		    send_actor (m.from, new Update (m.role, null));
 		    registerEvent (x, h);
 		    eventUpdate (x, h, [m]);
 		}));
-	}
+	};
+	
    
 	var eventUpdate = function (x, h, ls) {
 	    recv(
@@ -144,7 +186,7 @@ with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 			}
 			eventUpdate (x, h, ls);
 		    })));
-	}
+	};
 	
 // 	var event = box (function () {
 // 	    return function (x) {
@@ -189,7 +231,7 @@ with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 // 	    }
 	    
 	    return r;
-	}
+	};
 	
 	var really_relative = function (t, x) {
 	    if (! (t && t.yera_value)) return false;
@@ -197,7 +239,7 @@ with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 	    if (t.yera_value == x) return true;
 	    if (t.parentNode) return really_relative (t.parentNode, x);
 	    return false;
-	}
+	};
 	var $unrelative$un =really_relative;
 
 	var relative = lift ($unrelative$un);
@@ -222,5 +264,4 @@ with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 	for (var j in bindings) iface.push (bindings [j]);
 	
 	return new Struct (new Interface (iface), bindings);
-    }();
-}
+    }}();

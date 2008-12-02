@@ -1,4 +1,5 @@
 with (Yera) with (Actors) with (ActorsTest) {
+
     var usereventFire = function (ev) {
 	throw "uninitialized fire action";
     };
@@ -11,11 +12,11 @@ with (Yera) with (Actors) with (ActorsTest) {
 		if (l . from != m.from || l.role != m.role) r.push (l);
 	    }
 	    return r;
-	}
+	};
 	
 	var YeraUserevent = function (ev) {
 	    this.event = ev;
-	}
+	};
 
 	YeraUserevent.prototype.name = "YeraUserevent";
 
@@ -40,14 +41,13 @@ with (Yera) with (Actors) with (ActorsTest) {
 		    otherwise (function (m) {
 			usereventUpdate (ls);
 		    })));
-	}
+	};
 	
 	var usereventSource = src (function () {
 	    var me = self ();
 	    usereventFire = function (m) {
 		send_actor (me, new YeraUserevent (m));
-	    }
-	    
+	    };	    
 	    usereventUpdate ([]);
 	});
 
@@ -59,7 +59,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 		return be (function (ev) {
 		    return usereventState(null);
 		});
-	    }
+	    };
 		    
 	    return r;
 	};

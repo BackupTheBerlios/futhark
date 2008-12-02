@@ -7,10 +7,10 @@ changeResult = userevent.changeResult;
 situation r = r untilI changeResult and changeResult.name == r.name and (lift situation) (pres changeResult);
 
 makeDiv as = {
-  namespace: xmlns,
-  nodetype: "div",
+  namespaceURI: xmlns,
+  nodeName: "div",
   attributes: [],
-  childs: as
+  childNodes: as
 };
 
 totl n = n untilI newResult and (lift tt) (pres newResult) (futr n)

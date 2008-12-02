@@ -29,7 +29,6 @@ with (Actors) with (ActorsMatch) with (ActorsTest) with (ActorsRemote) {
 	recv (
 	    cond (
 		match ({"message": {"body": '?body', "from": '?name'}}, function (bs) {
-		    
 		    var body = bs.body;
 		    var name = bs.name;
 		    var bld = document.createElement ("b");
@@ -87,7 +86,6 @@ with (Actors) with (ActorsMatch) with (ActorsTest) with (ActorsRemote) {
     };
 
     window.onunload = function () {
-	alert ("exiting");
 	send (chatroom, {'exit': {'name': name, 'address' : main_actor}});
     };
     

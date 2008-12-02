@@ -857,7 +857,7 @@
 ;;       (list (cadr e) (caddr e))))
    
 (define (yera->js pwd in #!optional (out (current-output-port)))
-  (display "with (Yera) {\n" out)
+  (display "with(Yera){" out)
   (bytecode->js
    (yera->bytecode pwd in)
    out)

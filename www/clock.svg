@@ -12,7 +12,7 @@
   <script type = "text/ecmascript" xlink:href = "yera/rts.js"/>
   <script type = "text/ecmascript" xlink:href = "clock.yera?action=code&amp;type=ecmascript"></script>
   <script type = "text/ecmascript"><![CDATA[
-      window.onload = function () {Yera.connect ("SvgClock.clock", "main")}
+      window.onload = function () {Yera.connect (SvgClock.bindings.clock, "main")}
   ]]></script>
     <text x = "10" y = "20" id = "main">YeraClock</text>
 </svg>

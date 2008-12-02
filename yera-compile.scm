@@ -52,11 +52,11 @@
    (else (error "Unknown element in the ast" e))))
 
 (define (let-compile e p)
-  (emit (p) "(function(){\n")
+  (emit (p) "function(){")
   (bindings-compile (cadr e) p)
   (emit (p) "return ")
   (expr-compile (caddr e) p)
-  (emit (p) "})()"))
+  (emit (p) "}()"))
 
 (define (bindings-compile e p)
   (for-each
@@ -69,7 +69,7 @@
 (define (assignment-compile e p)
   (emit (p) "var " (mangle (car e)) "=")
   (expr-compile (cadr e) p)
-  (emit (p) ";\n"))
+  (emit (p) ";"))
 
 (define (lambda-compile e p) 
   (let(
@@ -77,29 +77,29 @@
     (emit (p)
           "function(" (mangle (car formals))
           (map (lambda (s) `("," ,(mangle s))) (cdr formals))
-          "){\n return ")
+          "){ return ")
     (expr-compile (caddr e) p)
     (emit (p) "}")))
 
 (define (array-compile e p)
-  (emit (p) "[\n")
+  (emit (p) "[")
   (if (null? (cdr e)) '()
       (let ()
         (expr-compile (cadr e) p)
         (for-each (lambda (j)
-                    (emit (p) ",\n")
+                    (emit (p) ",")
                     (expr-compile j p))
                   (cddr e))))
   (emit (p) "]"))
 
 (define (object-compile e p)
-  (emit (p) "{\n")
+  (emit (p) "{")
   (if (null? (cdr e)) '()
       (let ()
         (emit (p) (caadr e) ":")
         (expr-compile (cadadr e) p)
         (for-each (lambda (j)
-                    (emit (p) ",\n" (car j) ":")
+                    (emit (p) "," (car j) ":")
                     (expr-compile (cadr j) p))
                   (cddr  e))))
   (emit (p) "}"))
@@ -124,8 +124,8 @@
 (define (open-compile e p)
   (emit (p) "var $$op=")
   (expr-compile (cadr e) p)
-  (emit (p) ";\n")
-  (emit (p) "for(var $$k in $$op.bindings)eval('var '+$$k+'=$$op.bindings[\"'+$$k+'\"]');\n"))
+  (emit (p) ";")
+  (emit (p) "for(var $$k in $$op.bindings)eval('var '+$$k+'=$$op.bindings[\"'+$$k+'\"]');"))
 
 (define (interface-compile e p)
   (emit (p) "new Interface([")
@@ -140,10 +140,10 @@
 
 ;; TODO make struct of type [symbols] x [values] instead of [symbols] x {symbols -> values}
 (define (struct-compile e p)
-  (emit (p) "function(){\n")
+  (emit (p) "function(){")
   (bindings-compile (caddr e) p)
-  (emit (p) "var $$st={};\n" "var $$in=") (expr-compile (cadr e) p) (emit (p) ";\n")
+  (emit (p) "var $$st={};" "var $$in=") (expr-compile (cadr e) p) (emit (p) ";")
   (emit (p)
-        "for(var $$j=0;$$j<$$in.symbols.length;$$j++)$$st[$$in.symbols[$$j]]=eval($$in.symbols[$$j]);\n"
-        "return new Struct ($$in, $$st);\n"
+        "for(var $$j=0;$$j<$$in.symbols.length;$$j++)$$st[$$in.symbols[$$j]]=eval($$in.symbols[$$j]);"
+        "return new Struct ($$in, $$st);"
         "}()"))

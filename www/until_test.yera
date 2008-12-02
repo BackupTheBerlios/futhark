@@ -8,7 +8,8 @@ open YeraCore, YeraDom, MouseEvents;
 files "mouse_events@.yera";
 
 -- default xml namespace applied to all quasiquoted expressions.
-xmlns = "http://www.w3.org/1999/xhtml";
+-- in this case html data.
+xmlns = null;
 
 -- happy state
 happy = `<p><img src = "Smiley.png"/>happy</p>;

@@ -25,6 +25,12 @@ XmlnsXLink =
     xmlns_xlink = "http://www.w3.org/1999/xlink";
     end;
 
+YeraHtml = 
+    struct : DefaultXmlnsI ->
+    open YeraCore;
+    xmlns = null;
+    end;
+
 YeraUtilsI = interface 
 (switch, id, if, imp, then, local, step);
 

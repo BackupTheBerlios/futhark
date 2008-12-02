@@ -1,46 +1,128 @@
-var isElement = function (o) {
-    return o instanceof Object && o.nodeName;
-}
+var patchNode = function () {
 
-var nul_dif = function (e0) {
-    return e0;
-}
-
-var diffNode = function (t, t0) {
-    if (t == t0) 
-	return nul_dif;
-
-    if (isElement (t)) {
-	if (isElement (t0) &&
-	    t.nodeName == t0.nodeName && 
-	    t.namespaceURI == t0.namespaceURI)
-	    return diffElement (t, t0);
-	return makeElement (t, t0);
-    }
+    var isElement = function (o) {
+	return o instanceof Object && o.nodeName;
+    };
     
-    if (! isElement (t))
-	return diffText (t, t0);
+    var isText = function (o) {
+	return ! isElement (o);
+    };
     
-    return makeText (t);
-}
+    var toText = function (o) {
+	if (o instanceof Array) {
+	    var s = "";
+	    for (var j = 0; j < o.length; j++) {
+		s += toText (o [j]) + ",";
+	    }
+	    return "[" + (s.length ? s.substring(0, s.length - 1) : "") + "]";
+	}
+	
+	if (o instanceof Object) {
+	    var s = "";
+	    for (var j in o) {
+		s+= j + ": " + toText (o [j]) + ",";
+	    }
+	    return "{" + (s.length ? s.substring (0, s.length - 1) : "") + "}";
+	}
+	return o + "";
+    };
 
-var diffElement = function (t, t0) {
-    var as = t.attributes,
-	as0 = t0.attributes,
-	cs = t.childNodes,
-	cs0 = t0.childNodes,
-        lena = Math.max (as.length, as0.length),
-	lenc = Math.max (cs.length, cs0.length),
-	ds = [];
+    var makeElement = function (t) {
+	var node = Dom.makeElementNode (t.namespaceURI, t.nodeName),
+	    as = t.attributes,
+	    cs = t.childNodes;
+
+	node.yera_value = t;
+
+	for (var j = 0; j < as.length; j++) {
+	    var a = as [j];
+	    Dom.setAttribute (node, a.namespaceURI, a.name, a.value);
+	}
+	for (var j = 0; j < cs.length; j++) {
+	    var c = cs [j];
+	    node.appendChild (isElement (c) ? makeElement (c) : makeText (c));
+	}
+	return node;
+    };
+
+    var makeText = function (t) {
+	var node = Dom.makeTextNode (toText (t));
+	
+	// node.yera_value = t;
+
+	return node;
+    };
+
+    var updateElement = function (t, t0, e0) {
+	var as = t.attributes,
+	    as0 = t0.attributes,
+	    lena = Math.max (as.length, as0.length),
+	    cs = t.childNodes,
+	    cs0 = t0.childNodes,
+	    lenc = Math.max (cs.length, cs0.length);
+
+	e0.yera_value = t;
+
+	for (var j = 0; j < lena; j++) {
+	    var a = as [j];
+	    var a0 = as0 [j];
+	    if (! a0) {
+		Dom.setAttribute (e0, a.namespaceURI, a,name, a.value)
+	    } else if (! a) {
+		Dom.delAttribute (e0, a0.namespaceURI, a0.name)
+	    } else if (a.namespaceURI != a0.namespaceURI || a.name != a.name) {
+		Dom.delAttribute (e0,a0.namespaceURI, a0.name);
+		Dom.setAttribute (e0, a.namespaceURI, a.name, a.value);
+	    } else if (a.value != a0.value) {
+		Dom.setAttribute (e0, a.namespaceURI, a.name, a.value);
+	    }
+	}
+
+	for (var j = 0; j < lenc; j++) {
+	    var c = cs [j];
+	    var c0 = cs0 [j];
+	    var ce = e0.childNodes [j];
+	    if (c == undefined) {
+		e0.removeChild (ce);
+	    } else if (c0 == undefined) {
+		e0.appendChild (isElement(c) ? makeElement (c) : makeText (c));
+	    } else {
+		var cf = patchNode (c, c0, ce);
+		if (cf != ce) 
+		    e0.replaceChild (cf, ce);
+	    }
+	}
+	return e0;
+    };
+        
+    var updateText = function (t, t0, e0) {
+	if (t != t0) e0.nodeValue = t;
+	// e0.yera_value = t;
+	return e0;
+    };
     
-    for (var j = 0; j < lena; j++) {
-	var d = diffAttr (as[j], as0[j]);
-	if (d != nul_dif) ds.push (d);
-    }
+    var patchNode = function (t, t0, e0) {
+	// sort better without repeated tests;
+	if (t == t0) return e0;
+	
+	if (isElement (t) &&
+	    isElement (t0) &&
+	    t.namespaceURI == t0.namespaceURI &&
+	    t.nodeName == t0.nodeName)
+	    return updateElement (t, t0, e0);
+	
+	if (isText (t) &&
+	    isText (t0))
+	    return updateText (t, t0, e0);
+	
+	if (isElement (t))
+	    return makeElement (t);
 
-    for (var j = =; j < lenc, j++) {
-	var d = diff_E (cs [j], cs0 [j]);
-	if (d != nul_dif)
-	    ds.push (function (k) {
-		d.apply 
-		
+	if (isText (t))
+	    return makeText (t);
+	
+	throw "patch Unknown";
+    };
+    
+    return patchNode;
+} ();

@@ -1,18 +1,17 @@
-with (Yera) with (Actors) with (ActorsTest) {    
-    var YeraCore = function () {
-	
+var YeraCore = function () {
+    with (Yera) with (Actors) with (ActorsTest) {    
 	var copy = function (o) {
 	    var c = {};
 	    for (var f in o) 
 		c [f] = o [f];
 	    return c;
-	}
+	};
 	var copyA = function (o) { 
 	    return o.concat();
-	}
+	};
 	 
 	var applyState = function (f, v) {
-	    var r = f.value.apply (null, v.value)
+	    var r = f.value.apply (null, v.value);
 	    var s = st (r);
 	    
 	    function setter (j) {
@@ -22,7 +21,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 		    return applyState (tf ? tf.behavior.apply(ev) : f, 
 				       tv ? tv.behavior.apply(ev) : v);
 		    });
-	    }
+	    };
 	    
 	    for (var j in f.then)
 		s.addSource (f.then [j].source, setter (j));
@@ -39,7 +38,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 // 		})
 // 	    }
 	    return s;
-	}
+	};
  	
 	var presState = function (v) {
 
@@ -52,7 +51,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 		return be (function (ev) {
 		    return presState (b1.apply (ev));
 		});
-	    }
+	    };
 	    for (var j in v.then)
 		s.addSource (v.then [j].source, setter (j));
 	    
@@ -62,7 +61,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 // 		});
 // 	    }
 	    return s;
-	}
+	};
 	
 
 	var futrState = function (v) {
@@ -90,7 +89,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 // 		});
 // 	    }
 	    return s;
-	} 
+	};
 	
 	var untilState = function (i, e) {
 	    var s = st (i.value);
@@ -123,7 +122,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 // 		});
 // 	    }
 	    return s;
-	}
+	};
 
 	var untilIState = function (i, e) {
 
@@ -154,7 +153,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 // 		});
 // 	    }
 	    return s;
-	}
+	};
     
 	var arrayState = function (os) {
 	    var r = [];
@@ -174,7 +173,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 		    }
 		    return arrayState (os1);
 		});
-	    }
+	    };
 	    var tix = [];
 	    for (var f = 0; f < os.length; f++)
 		for (var j in os[f].then) 
@@ -216,7 +215,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 		    }
 		    return objectState (os1);
 		});
-	    }
+	    };
 	    var tix = [];
 	    for (var f in os) 
 		for (var j in os[f].then) 
@@ -248,25 +247,25 @@ with (Yera) with (Actors) with (ActorsTest) {
 
 	var $const = function (v) {
 	    return be (function (ev) {return st (v)});
-	}
+	};
 
 	var lift = function (f) {
 	    return function () {
 		return apply ($const (f), liftArray (arguments));
 	    }
-	}	    
+	};    
 
 	var pres = function (v) {
 	    return be (function (ev) {
 		return presState (v.apply (ev));
 	    });
-	}
+	};
 
 	var futr = function (v) {
 	    return be (function (ev) {
 		return futrState (v.apply (ev));
 	    });
-	}
+	};
 	
 	var until = function (i, e) {
 	    return be (function (ev) {
@@ -274,7 +273,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 		    i.apply (ev),
 		    e.apply (ev));
 	    });
-	}
+	};
 	
 	var untilI = function (i, e) {
 	    return be (function (ev) {
@@ -282,7 +281,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 		    i.apply (ev),
 		    e.apply (ev));
 	    });
-	}
+	};
 	
 	var liftArray = function (os) {
 	    return be (function (ev) {
@@ -291,7 +290,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 		    s [j] = os [j].apply (ev);
 		return arrayState (s);
 	    });
-	}
+	};
 	
 	var liftObject = function (os) {
 	    return be (function (ev) {
@@ -300,118 +299,118 @@ with (Yera) with (Actors) with (ActorsTest) {
 		    s [j] = os [j].apply (ev);
 		return objectState (s);
 	    });
-	}
+	};
 
 	var $em$un = function (x) {
 	    return ! x;
-	    }
+	};
 	
 	var $em = lift ($em$un);
 
 	var negate$un = function (x) {
 		return  - x;
-	}
+	};
 
 	var negate = lift (negate$un);
 
 	var length$un = function (x) {
 	    return x . length; 
-	}
+	};
 
 	var length = lift (length$un);
 
 	var $un$pl$un = function (x, y) {
 	    return x + y;
-	}
+	};
 
 	var $pl = lift ($un$pl$un);
 
 	var $un$mn$un = function (x, y) {
 	    return x - y;
-	}
+	};
 
 	var $mn = lift ($un$mn$un);
 	
 	var $un$st$un = function (x, y){
 	    return x * y;
-	}
+	};
 	
 	var $st = lift ($un$st$un);
 	
 	var $un$sl$un = function (x, y) {
 	    return x / y;
-	}
+	};
     
 	var $sl = lift ($un$sl$un);
 	
 	var $un$pr$un = function (x, y) {
 	    return x % y; 
-	}
+	};
 	
 	var $pr = lift ($un$pr$un);
 	
 	var $un$gt$un =function (x, y) {
 	    return x > y;
-	}
+	};
 	
 	var $gt = lift ($un$gt$un);
 	
 	var $un$lt$un = function (x, y) {
 	    return x < y;
-	}
+	};
 
 	var $lt = lift ($un$lt$un);
 
 	var $un$gt$eq$un = function (x, y) {
 		return x >= y;
-	}
+	};
 
 	var $gt$eq = lift ($un$gt$eq$un);
 	
 	var $un$lt$eq$un = function (x, y) {
 		return x <= y;
-	}
+	};
 	
 	var $lt$eq = lift ($un$lt$eq$un);
     
 	var $un$eq$eq$un = function (x, y) {
 		return x == y;
-	}
+	};
 
 	var $eq$eq = lift ($un$eq$eq$un);
 
 	var $un$vb$vb$un = function (x, y) {
 	    return x || y;
-	}
+	};
 
 	var $vb$vb = lift ($un$vb$vb$un);
 
 	var $un$nd$nd$un = function (x, y) {
 	    return x && y;
-	}
+	};
 
 	var $nd$nd = lift ($un$nd$nd$un);
 	
 	var $unref$un = function (x, y) {
 	    return (x && x [y]);
-	}
+	};
 	
 	var ref = lift ($unref$un);
 	
 	var $unconcat$un = function (x, y) {
 	    return x.concat (y);
-	}    
+	};   
 	var concat = lift ($unconcat$un);
 	
 	var $un$ex$un = function (x, y) {
 		return Math.pow(x, y);
-	}
+	};
 	
 	var $ex = lift ($un$ex$un);
 	
 	var $unsubstring$un = function (x,y,z) {
 	    return x.substring (y, z);
-	}
+	};
 	
 	var substring = lift ($unsubstring$un);
 
@@ -421,17 +420,17 @@ with (Yera) with (Actors) with (ActorsTest) {
 	    for (var j = 0; j < a.length; j++)
 		r [j] = f (a [j]);
 	    return r;
-	}
+	};
 	
 	var map = function (f, x) {
 	    return lift (map$un) (lift0 (f)) (x);
-	}
+	};
 
 	var foldl$un = function (f, i, a) {
 	    for (var j = 0; j < a.length; j++)
 		i = f (i, a[j]);
 	    return i;
-	}
+	};
 
 	var foldl = lift (foldl$un);
 
@@ -482,25 +481,25 @@ with (Yera) with (Actors) with (ActorsTest) {
  
 	var hour$un = function (t) {
 	    return (new Date (t)).getHours ();
-	}
+	};
 
 	var hour = lift (hour$un);
 
 	var minute$un =function (t) {
 	    return (new Date (t)).getMinutes ();
-	}
+	};
 
 	var minute = lift (minute$un);
 
 	var second$un = function (t) {
 	    return (new Date (t)).getSeconds ();
-	}
+	};
 
 	var second = lift (second$un);
 
 	var millisecond$un = function (t) {
 	    return (new Date (t)).getMilliseconds ();
-	}
+	};
 	
 	var millisecond = lift (millisecond$un);
 	
@@ -595,6 +594,5 @@ with (Yera) with (Actors) with (ActorsTest) {
 	var iface = [];
 	for (var j in bindings) iface.push (j);
 	
-	return new Struct (new Interface (iface), bindings); 
-    }();
-}
+	return new Struct (new Interface (iface), bindings);
+    }}();

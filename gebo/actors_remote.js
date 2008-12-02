@@ -1,11 +1,11 @@
-with (Actors) { 
+var ActorsRemote = function () {
+    with (Actors) { 
 
-    var ActorsRemote = function () {
 	var init = function () {
 	    connection_id = http_uid ();
 	    http_init_in ();
 	    http_init_out ();
-	}    
+	};
 
 	var XHR;
 	if (typeof XMLHttpRequest != 'undefined') {
@@ -13,18 +13,19 @@ with (Actors) {
 		var req = new XMLHttpRequest();
 		req.parseXml=function(){return req.responseXML};
 		return req;
-	    }
+	    };
 	}else if (typeof ActiveXObject != 'undefined') {
 	    XHR = function () {
 		var req=new ActiveXObject("Microsoft.XMLHTTP");
 		req.parseXml=function(){
 		    var doc = new ActiveXObject ("Microsoft.XMLDOM");
 		    doc.loadXML(req.responseText);
-		    return doc}
+		    return doc;
+		};
 		return req;
 	    }
 	}else {
-	    XHR = function () { throw "XMLHttpRequest unsupported" }
+	    XHR = function () { throw "XMLHttpRequest unsupported"; };
 	}
 
 	var host = "",
@@ -36,7 +37,7 @@ with (Actors) {
 
 	var stringToJson = function (s) {
 	    return eval ("(" + s + ")");
-	}
+	};
 
 	var arrayToString = function (o) {
 	    var s = "";
@@ -44,7 +45,7 @@ with (Actors) {
 		s+= ',' + jsonToString (o [j]);
 	    if (s.length == 0) return "[]";
 	    else return "[" + s.substring(1) + "]";
-	}
+	};
 
 	var objectToString = function (o) {
 	    var s = "";
@@ -52,7 +53,7 @@ with (Actors) {
 		s+= ',' + jsonToString(j) + ':' + jsonToString (o [j]);
 	    if (s.length == 0) return "{}";
 	    else return "{" + s.substring(1) + "}";
-	}
+	};
 
 	var stringToString = function (o) {
 	    var s = "";
@@ -61,7 +62,7 @@ with (Actors) {
 		s+= c == '"' ? '\\"' : c;
 	    }
 	    return '"' + s  + '"';
-	}
+	};
 
 	var jsonToString = function (o) {
 	    if (o instanceof Array) return arrayToString (o);
@@ -75,14 +76,14 @@ with (Actors) {
 	    else if (o instanceof Object) return objectToString (o);
 	    else return stringToString (typeof o);
 	    // else throw "json conversion error";
-	}
+	};
 	
 	var http_uid = function () {
 	    var con = XHR ();
 	    con.open ("GET", host + "/gebo/uid", false);
 	    con.send (null);
 	    return stringToJson (con.responseText);
-	}
+	};
 
 	var http_init_in = function () {
 	    var con = XHR();
@@ -99,10 +100,10 @@ with (Actors) {
 			}
 		    }
 		}
-	    }
+	    };
 	    con.send (null);
 	    return null;
-	}
+	};
 
 	var http_init_out = function () {
 	    var con = XHR();
@@ -118,9 +119,9 @@ with (Actors) {
 		    }
 		};
 		con.send (jsonToString (mb));
-	    }
+	    };
 	    if (mailbox.length > 0) send_data ();
-	}
+	};
 
 // 	var actor_send = function (a, msg) {
 // 	    Actors.send_actor (a, msg);
@@ -131,23 +132,23 @@ with (Actors) {
 		pid : pid, 
 		message: msg};
 	    send_data ();
-	}
+	};
 	
 	var local_send = function (id, msg) {
 	    send_actor (idToActor (id["process-id"]), msg)
-	}
+	};
 
 	var scheme_send = function (id, msg) {
 	    remote_send (id, actorToAddr (msg));
-	}
+	};
 
 	var javascript_send = function (id, msg) {
 	    local_send (id, addrToActor (msg));
-	}
+	};
 
 	var idToActor = function (id) {
 	    return actors [id];
-	}
+	};
 
 	var actorToId = function (a) {
 	    var id = a.remote_actor_id;
@@ -155,30 +156,29 @@ with (Actors) {
 		id = ++actor_ids;
 		a.remote_actor_id = id;
 		actors [id] = a;
-	    }
+	    };
 	    return id;
-	}
+	};
 	
 	var actorToAddr = function (msg) {
-	    if (msg instanceof Actor)
+	    if (msg instanceof Actor) {
 		return {"id-type": "javascript",
 			"connection-id" : connection_id,
 			"process-id" : actorToId(msg)
-		       }
-	    if (msg instanceof Array) {
+		       };
+	    } else if (msg instanceof Array) {
 		var r = [];
 		for (var j = 0; j < msg.length; j++)
 		    r [j] = actorToAddr (msg [j]);
 		return r;
-	    }
-	    if (msg instanceof Object) {
+	    } else  if (msg instanceof Object) {
 		var r = {};
 		for (var j in msg)
 		    r [j] = actorToAddr (msg [j]);
 		return r;
 	    }
 	    return msg;    
-	}
+	};
 
 	var addrToActor = function (msg) {
 	    if (msg instanceof Object && msg["id-type"] == 'javascript')
@@ -196,13 +196,13 @@ with (Actors) {
 		return r;
 	    }
 	    return msg;    
-	}
+	};
 	
 	var send = function (id, msg) {
 	    if (id instanceof Actor) return send_actor (id, msg);
 	    // if (id instanceof Actor) return actor_send (id, msg);
 	    return scheme_send (id, msg);
-	}
+	};
 
 	// add code to handle result accordly to content type
 	var get = function  (nm) {
@@ -210,14 +210,14 @@ with (Actors) {
 	    con.open ("GET", nm, false);
 	    con.send (null);
 	    return stringToJson (con.responseText);
-	}
+	};
 
 	var post = function (nm, what, ct) {
 	    var con = XHR ();
 	    con.open ("POST", nm, false);
 	    con.send (what);
 	    return stringToJson (con.responseText);
-	}
+	};
 	
 	return {
 	    jsonToString: jsonToString,
@@ -227,5 +227,4 @@ with (Actors) {
 	    get: get,
 	    post: post
 	};
-    }();
-}
+    }}();

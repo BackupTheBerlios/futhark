@@ -1,4 +1,4 @@
-xmlns = "http://www.w3.org/1999/xhtml";
+xmlns = null;
 
 local = 0 until (lift \x x0 -> x - x0) (futr time) (pres time);
 

@@ -1,5 +1,8 @@
+(define squish? #t)
 (define files 
   (list
+   "compat_dom.js"
+   "patch.js"
    "yera.js"
    "yera_core.js"
    "yera_dom.js"
@@ -7,30 +10,47 @@
    "yera_userevent.js"))
 
 
-(define sizes (map file-size files))
+(define (squish files)
+  (shell-command "mkdir temp")
+  (for-each (lambda (file)
+              (shell-command
+               (string-append
+                "js_compactor --opt"
+                " --src " file
+                " --dest temp/" file)))
+            files)
+  (shell-command
+   (string-append
+    "cat" (apply string-append
+                 (map (lambda (c) (string-append " temp/" c)) files))
+    ">rts.js"))
+  (shell-command "rm -r temp"))
 
-(define total (apply + sizes))
+
+(define (concat-files files)
+  (shell-command
+   (string-append "cat "
+                  (apply
+                   string-append
+                   (map (lambda (c) (string-append " " c)) files))
+                  " > rts.js")))
+
+(if squish?
+    (squish files)
+    (concat-files files))
 
 
-(define out "../yera-rts.scm")
- 
-(define j 0)
- 
-(define out-vector (make-u8vector total))
+(define size (file-size "rts.js"))
 
-(for-each (lambda (f s)
-            (call-with-input-file f
-              (lambda (p)
-                (let(
-                     (j1 (+ j s)))
-                  (read-subu8vector out-vector j j1 p)
-                (set! j j1)))))
-          files sizes)
+(define out-vector (make-u8vector size))
 
-(call-with-output-file out
+(call-with-input-file "rts.js"
+  (lambda (p)
+    (read-subu8vector out-vector 0 size p)))
+
+(call-with-output-file "../yera-rts.scm"
   (lambda (p)
     (pp `(define *-rts-data-* ',out-vector) p)
-    (pp `(define *-rts-size-* ,total) p)))
-        
-           
- 
+    (pp `(define *-rts-size-* ,size) p)))
+
+(shell-command "rm rts.js")

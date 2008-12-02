@@ -1,6 +1,6 @@
-with (Actors) with (ActorsTest) {
+var ActorsMatch  = function () {
+    with (Actors) with (ActorsTest) {
 
-    var ActorsMatch  = function () {
 	
 // 	var clone = function (o) {
 // 	    var r = {};
@@ -73,17 +73,17 @@ with (Actors) with (ActorsTest) {
 
 	var isVar = function (s) {
 	    return (typeof s == 'string') && (s.substring (0, 1) == '?');
-	}
+	};
 
 	var _matchVar = function (pat, val) {
 	    var r = {};
 	    r [pat.substring (1)] = val;
 	    return r;
-	}
+	};
 
 	var _matchConst = function (pat, val) {
 	    return pat == val ? {} : false;
-	}
+	};
 
 	var _matchArray = function (pat, val) {
 	    if (! (val instanceof Array)) return false;
@@ -107,7 +107,7 @@ with (Actors) with (ActorsTest) {
 		for (var f in r1) r [f] = r1 [f];
 	    }
 	    return r;
-	}
+	};
 		
 	var _match = function (pat, val) {
 	    if (pat == _) return {};
@@ -127,19 +127,19 @@ with (Actors) with (ActorsTest) {
 		return _matchObject (pat, val);
 	    
 	    return false;
-	}
+	};
 	
 	var match = function (t, ct) {
 	    return when (
 		function (c) {return _match (t, c, {})},
 		function (c, r) {ct (r)})
-	}
+	};
 
 	return {
 	    _match: _match,
 	    match: match,
 	    _: _
-	}
-    }();
-}
+	};
+    }}();
+
 

@@ -4,7 +4,7 @@ IconI = interface (icon);
 
 Icon = 
     struct : IconI ->
-    open YeraCore, YeraDom, YeraMath, XmlnsXhtml, YeraUtils, MouseEvents;
+    open YeraCore, YeraDom, YeraMath, YeraHtml, YeraUtils, MouseEvents;
     files "mouse_events@.yera", "yera_utils@.yera", "icon.yera";
 end;
 
@@ -12,21 +12,20 @@ ProgressBarI = interface (hbar, vbar, fixed_hbar, fixed_vbar);
 
 ProgressBar = 
     struct : ProgressBarI ->
-    open YeraCore, YeraDom, YeraMath, XmlnsXhtml;
+    open YeraCore, YeraDom, YeraMath, YeraHtml;
     files "progressbar.yera";
 end;
 
 -- TextI = interface (text);
 
 -- Text = struct : TextI ->
---     open YeraCore, YeraDom, YeraMath, XmlnsXhtml, MouseEvents;
+--     open YeraCore, YeraDom, YeraMath, YeraHtml, MouseEvents;
 --     files "mouse_events@.yera", "text.yera";
 -- end;
 
-
 Test = 
     struct : (main) ->
-    open YeraCore, YeraDom, Icon, XmlnsXhtml, YeraUtils, MouseEvents;
+    open YeraCore, YeraDom, Icon, YeraHtml, YeraUtils, MouseEvents;
     files "mouse_events@.yera";
          
     i0 = icon "MisterWong.png";

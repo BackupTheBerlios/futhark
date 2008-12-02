@@ -1,3 +1,4 @@
+
 xmlns = "http://www.w3.org/2000/svg";
 
 xmlns_xlink = "http://www.w3.org/1999/xlink";
@@ -15,17 +16,38 @@ r = 50;
 
 rot = - (time / 100) % 360;
 
-body = `<g>
-       <circle cx = cx cy = cy r = r style = "fill:#f0f0f0;stroke:black;stroke-width:1pt"/> 
-       <image x = "13" y = "13" width = "80" height = "80" 
-                  xlink:href = "yera.png" style = "opacity:0.4"
-                  transform = ("rotate (" + rot + ", 53, 53)") />
-       </g>;
+body = 
+    `<g>
+    <circle 
+    cx = cx 
+    cy = cy 
+    r = r 
+    style = "fill:#f0f0f0;stroke:black;stroke-width:1pt"/>
+    <image 
+    x = "13"
+    y = "13"
+    width = "80"
+    height = "80"
+    xlink:href = "yera.png"
+    style = "opacity:0.4"
+    transform = ("rotate (" + rot + ", 53, 53)")/>
+    </g>;
 
-lancet l t a = `<g>
-               <line x1 = cx y1 = cy x2 = (cx + x) y2 = (cy + y)  style = ("stroke:black;stroke-width:" + t + "pt")/>
-               <line x1 = sx y1 = sy x2 = (sx + x) y2 = (sy + y)  style = ("opacity:0.2;stroke:black;stroke-width:" + t + "pt")/>
-               </g>
+lancet l t a = 
+    `<g>
+    <line 
+    x1 = cx 
+    y1 = cy 
+    x2 = (round (cx + x))
+    y2 = (round (cy + y))
+    style = ("stroke:black;stroke-width:" + t + "pt")/>
+    <line 
+    x1 = sx 
+    y1 = sy 
+    x2 = (round (sx + x))
+    y2 = (round (sy + y))
+    style = ("opacity:0.2;stroke:black;strokeWidth:" + t + "pt")/>
+    </g>
     where
       x = l * (sin a);
       y = - l * (cos a); 
@@ -50,6 +72,11 @@ s1 = sec % 10;
 
 text_time = "" + h0 + h1 + ":" + m0 + m1 + ":" + s0 + s1;
 
-txt = `<text x = "31" y = "75" style = "fill:#FF7777;font-size:6pt">@text_time</text>;
+txt = 
+    `<text 
+    x = "31" 
+    y = "75" 
+    style = "fill:#FF7777;font-size:6pt"
+    >@text_time</text>;
 
 clock = `<g transform = "scale(1.5)">@body @txt @l0 @l1 @l2</g>; 

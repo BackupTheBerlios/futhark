@@ -2,12 +2,12 @@
 newChoice = userevent.choice;
 
 makeDiv p as = {
-  namespace: xmlns,
-  nodetype: "div",
+  namespaceURI: xmlns,
+  nodeName: "div",
   attributes: [{namespace: "",
                 name: "style",
                 value: {opacity: p}}],
-  childs: as
+  childNodes: as
 };
 
 on_newchoice s0 new = 
