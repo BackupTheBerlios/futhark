@@ -1,6 +1,8 @@
 var YeraDom = function () {
     with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
 	
+	var ismsie = navigator.appName == "Microsoft Internet Explorer";
+
 	var now = function () {return (new Date ()).getTime ();};
 	
 	var removeRole = function (ls, m) {
@@ -140,21 +142,21 @@ var YeraDom = function () {
 // 		    eventUpdate (x, h, [m]);
 // 		}));
 // 	};
-  
+
 	var eventUpdateSuspended = function (x) {
 	    recv(
 		hasType (Register, function (m) {
 		    var me = self ();
 		    var h = function (ev) {
-			if (! ev) ev = window.event;
-			if (ev.preventDefault) ev.preventDefault ();
-			else ev.returnValue = false;
-			
-			if (! ev.target) ev.target = ev.srcElement;
-
-			if (window.event)
+			if (ismsie) {
+			    // msie incompatibility issue
+			    ev = window.event;
+			    ev.returnValue = false;
+			    ev.target = ev.srcElement;
 			    ev.relatedTarget = ev.type == 'mouseover' ? ev.fromElement : ev.toElement;
-			
+			} else  {
+			    ev.preventDefault ();
+			}
 			send_actor (me, new YeraEvent (ev));
 		    };
 		    send_actor (m.from, new Update (m.role, null));
