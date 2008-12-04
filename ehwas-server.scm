@@ -89,9 +89,6 @@
 ;;   (server-process-set! s #f)
 ;;   (server-connection-port-set! s #f))
 
-
-
-
 (define-structure server
   host
   port

@@ -15,8 +15,8 @@
   
   <h3>Yera source:</h3>
   <pre><?scheme 
-	 (call-with-input-file "www/until_test.yera"
-   (lambda (p) (echo (read-line p #\nul))))
+(call-with-input-file "www/until_test.yera"
+  (lambda (p) (echo (read-line p #\nul))))
    ?>
   </pre>
 </body>

@@ -5,15 +5,17 @@
 (include "ansuz-language#.scm")
 (include "ansuz-kernel#.scm")
 
-(declare (standard-bindings)
-         (extended-bindings)
-         (block)
-         (not safe))
+(declare
+ (standard-bindings)
+ (extended-bindings)
+ (block)
+ (not safe)
+ )
 
 (define-structure operator-table prefix infix postfix)
 
 (define-structure result precedence function associativity)
-  
+
 (define-parser (prefix ot)
   (prefix* (operator-table-prefix ot)))
 

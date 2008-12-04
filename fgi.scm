@@ -14,9 +14,9 @@
 (include "ehwas-server.scm")
 (include "ehwas-sessions.scm")
 (include "ehwas-query.scm")
+(include "ehwas-sessions.scm")
 
 (include "ehwas-cookies.scm")
-
 (include "ehwas-pages.scm")
 
 (include "uids.scm")

@@ -16,7 +16,7 @@
 (declare (standard-bindings)
          (extended-bindings)
          (block)
-         (fixnum)
+         (mostly-fixnum)
          ;; (not safe)
          )
 

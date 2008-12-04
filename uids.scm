@@ -7,7 +7,7 @@
   (block)
   (not safe)
   (fixnum)
-)
+  )
 
 (define *-uids-* (make-table init: #f weak-keys: #t))
 (define *-uid-max-* (expt 2 32))
