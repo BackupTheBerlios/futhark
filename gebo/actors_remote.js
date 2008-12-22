@@ -50,7 +50,9 @@ var ActorsRemote = function () {
 	var objectToString = function (o) {
 	    var s = "";
 	    for (var j in o) 
-		s+= ',' + jsonToString(j) + ':' + jsonToString (o [j]);
+		try {
+		    s+= ',' + jsonToString(j) + ':' + jsonToString (o [j]);
+		} catch (ex) {};
 	    if (s.length == 0) return "{}";
 	    else return "{" + s.substring(1) + "}";
 	};
@@ -72,7 +74,7 @@ var ActorsRemote = function () {
 	    else if (o == null) return 'null';
 	    else if (o == true) return 'true';
 	    else if (o == false) return 'false';
-	    else if (typeof 0 == 'function') throw "json conversion error : function";
+	    else if (typeof o == 'function') throw "json conversion error : function";
 	    else if (o instanceof Object) return objectToString (o);
 	    else return stringToString (typeof o);
 	    // else throw "json conversion error";
