@@ -260,11 +260,7 @@
 
 
 ;; creates a web server resolver
-;; if the file has extension ".sp" then it is interpreted
-;; as a server page.
-;; scm and o1 are blocked signalling error 403 (Forbidden access)
-;; (todo move this feature in a new resolver and couple with this through an orelse-resolver)
-;; other extensions are ignored
+;; interprets every file as a serverpage, if found
 
 (define (make-serverpage-resolver root)
   (let(

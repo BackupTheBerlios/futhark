@@ -5,9 +5,9 @@
   make-guarded-resolver
   make-cached-resolver
   make-filesystem-resolver
+  make-table-resolver
   with-index-resolver
   with-prefix-resolver
-  make-table-resolver
-  allow
-  deny
+  allow-resolver
+  deny-resolver
   ))

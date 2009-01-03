@@ -145,10 +145,14 @@
           (close-port (server-sock s))))))
 
 (define (touch-server s)
-  (close-port 
-   (open-client-socket
-    (server-host s)
-    (server-port s))))
+  (let (
+        (p
+         (open-client-socket
+          (server-host s)
+          (server-port s))))
+    (display "GET \\ \n" p)
+    (force-output p)
+    (close-port p)))
 
 (define (start! s)
   (server-sock-set! s (open-server-socket (server-host s) (server-port s)))

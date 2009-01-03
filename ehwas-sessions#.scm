@@ -6,5 +6,4 @@
   session-init
   session-identifier
   session-table
-  clean-sessions
   ))

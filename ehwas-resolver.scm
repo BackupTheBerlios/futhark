@@ -255,12 +255,12 @@
                       (request-header request)
                       (request-port request)))))))
 
-(define (allow fn resolver)
+(define (allow-resolver fn resolver)
   (lambda (request)
     (and (fn request) (resolver request))))
 
-(define (deny fn resolver)
-  (allow
+(define (deny-resolver fn resolver)
+  (allow-resolver
    (lambda (req) (not (fn req)))
    resolver))
        

@@ -10,3 +10,4 @@
 (include "file-sessions#.scm")
 (include "pg-sessions#.scm")
 
+(include "ehwas-language#.scm")
