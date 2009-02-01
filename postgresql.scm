@@ -460,14 +460,41 @@
         (b (quotient ar 8))
         (c (remainder ar 8)))
   (display `("\\\\" ,a ,b ,c) p)))
+
+;; (define (read-string p)
+;;   (call-with-output-string
+;;    (lambda (sp)
+;;      (let loop ()
+;;        (let(
+;;             (c (read-char p)))
+;;          (cond
+;;           ((eof-object? c) '())
+;;           ((char=? c #\\)
+;;            (let(
+;;                 (c1 (read-char p)))
+;;              (cond
+;;               ((char=? c1 #\b) (write #\backspace sp))
+;;               ((char=? c1 #\n) (write #\newline sp))
+;;               ((char=? c1 #\f) (write #\linefeed sp))
+;;               ((char=? c1 #\r) (write #\return sp))
+;;               ((char=? c1 #\t) (write #\tab sp))
+;;               (else (write c1 sp))))
+;;            (loop))
+;;           (else
+;;            (write c sp)
+;;            (loop))))))))
+
+(define (read-string p)
+  (read-line p #\nul))
+               
                
 (define (really-init-readers #!optional (con (current-connection)))
   (set-readers!
    `(
      ("bool" ,pg-read-bool)
-     ("char" ,read-line)
-     ("varchar" ,read-line)
-     ("text" ,read-line)
+     ("char" ,read-string)
+     ("varchar" ,read-string)
+     ("text" ,read-string)
      ("int2" ,read)
      ("int4" ,read)
      ("int8" ,read)
@@ -541,12 +568,32 @@
       th
       (lambda () (execute "COMMIT WORK"))))
 
+(define (escape s)
+  (call-with-output-string
+   ""
+   (lambda (p)
+     (let for ((j 0))
+          (if (< j (string-length s))
+              (let(
+                   (c (string-ref s j)))
+                (cond
+                 ((char=? c #\\) (display "\\" p))
+                 ((char=? c #\") (display "\\\"" p))
+                 ((char=? c #\') (display "\\'" p))
+                 ((char=? c #\backspace) (display  "\\b" p))
+                 ((char=? c #\newline) (display "\\n" p))
+                 ((char=? c #\linefeed) (display "\\f" p))
+                 ((char=? c #\return) (display "\\r" p))
+                 ((char=? c #\tab) (display "\\t" p))
+                 (else (display c p)))
+                (for (+ j 1))))))))
+           
 (define (c f)
   (cond
    ((null? f) "NULL")
    
    ((or (char? f) (string? f))
-    `(#\' ,f #\'))
+    `("E'" ,(escape f) #\'))
 
    ((number? f)
     f)
