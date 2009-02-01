@@ -1,5 +1,6 @@
 (##namespace
  ("gebo-resolver#"
   gebo-resolver
-  json-response ;; only temporarly 
+  json-response
   gebo-send))
+  

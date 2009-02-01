@@ -29,7 +29,7 @@
   (host *)
   (port 1080)
   (resolve
-   (allow (extensions .png .jpg html)
+   (allow (extensions .png .jpg .html)
           (with-cache (static www)))
    (with-indexes (index.ehwas index.html) (files www))
    (gebo)

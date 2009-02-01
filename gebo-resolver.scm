@@ -45,21 +45,21 @@
      (table-set! *-uid->mailbox-* ,u ,m)
      (table-set! *-mailbox->uid-* ,m ,u)))
 
-(define-structure jid conn-id proc-id)
+;; (define-structure jid conn-id proc-id)
 
-(define *-uid->thread-* (make-table weak-values: #t))
-(define *-thread->uid-* (make-table weak-keys: #t))
+(define *-uid->pid-* (make-table weak-values: #t))
+(define *-pid->uid-* (make-table weak-keys: #t))
 
-(define (thread->uid t)
-  (or (table-ref *-thread->uid-* t #f)
+(define (pid->uid t)
+  (or (table-ref *-pid->uid-* t #f)
       (let(
            (uid (make-uid)))
-        (table-set! *-thread->uid-* t uid)
-        (table-set! *-uid->thread-* uid t)
+        (table-set! *-pid->uid-* t uid)
+        (table-set! *-uid->pid-* uid t)
         uid)))
 
-(define (uid->thread u)
-  (table-ref *-uid->thread-* u #f))
+(define (uid->pid u)
+  (table-ref *-uid->pid-* u #f))
 
 ;; behavioral transformations of mailbox as an actor
 
@@ -170,52 +170,24 @@
    (make-thread
     empty-mailbox)))
 
-(define (scheme-id->javascript-id o)
-  (cond
-   ((thread? o)
-    (obj ("id-type" "scheme")
-         ("process-id" (thread->uid o))))
-   ((jid? o)
-    (obj ("id-type" "javascript")
-         ("connection-id" (jid-conn-id o))
-         ("process-id" (jid-proc-id o))))
-   (else o)))
+(define (pid->json o)
+  (or (and (scheme-pid? o)
+           (obj ("id-type" "scheme")
+                ("process-id" (pid->uid o))))
+      o))
 
-(define (javascript-id->scheme-id o)
-  (if (not (table? o)) o
-      (let(
-           (t (table-ref o "id-type" #f)))
-        (if (not t) o
-            (cond
-             ((string=? t "scheme")
-              (uid->thread (table-ref o "process-id")))
-             ((string=? t "javascript")
-              (make-jid (table-ref o "connection-id")
-                        (table-ref o "process-id")))
-             (else o))))))
-
-(define (gebo-send to msg)
-  (cond
-   ((thread? to) (thread-send to msg))
-   ((jid? to) (js-send to msg))
-   (else (error "cannot handle address in gebo-send" to))))
-
-(define (js-send to msg)
-  (let(
-       (th (uid->mailbox (jid-conn-id to))))
-    (thread-send
-     th
-     `(put ,(list->table `(("pid" . ,to) ("message" . ,msg)))))))
-
-;;     (thread-send th
-;;      `(put ,(obj ("pid" to) ("message" msg))))))
+(define (json->pid o)
+  (or (and (table? o)
+           (string=? (table-ref o "id-type" "") "scheme")
+           (uid->pid (table-ref o "process-id")))
+      o))
 
 (define (json-response r o)
   (let(
        (str (call-with-output-u8vector
              (u8vector)
              (lambda (p)
-               (json-write o p scheme-id->javascript-id)))))
+               (json-write o p pid->json)))))
     (make-response
      (request-version r) 200 "OK"
      (header
@@ -248,15 +220,19 @@
       res)))
 
 (define (gebo-notify req)
-  (let(
-       (ms (json-read
-            (request-port req)
-            javascript-id->scheme-id)))
-    (for-each (lambda (m)
-                (gebo-send (table-ref m "pid")
-                           (table-ref m "message")))
-              ms)
-    (json-response req #t)))
+  (with-exception-catcher
+   (lambda (ex)
+     (pp (unbound-global-exception-variable ex))
+     (raise ex))
+   (lambda () 
+     (let(
+          (ms (json-read
+               (request-port req)
+               json->pid)))
+       (for-each (lambda (m)
+                   (gebo-send (table-ref m "pid") (table-ref m "message")))
+                 ms)
+       (json-response req #t)))))
 
 (define (gebo-rts req)
   (make-response
@@ -284,3 +260,39 @@
       (gebo-notify req))
      
      (else #f))))
+
+
+(define-macro (cond-termite a b)
+  (define-macro (defined? e)
+    `(with-exception-catcher
+      (lambda (_) #f)
+      (lambda () ,e #t)))
+  
+  (if (defined? termite#!) a b))
+      
+(define-macro (pid)
+  (if (defined? termite#pid?) 'termite#pid? 'thread?))
+
+(define scheme-pid?
+  (cond-termite termite#pid? thread?))
+
+  (define (javascript-pid? p)
+  (and (table? p)
+       (string=? (table-ref p "id-type" "") "javascript")))
+
+(define scheme-send
+  (cond-termite termite#! thread-send))
+
+(define (javascript-send to msg)
+  (let(
+       (th (uid->mailbox (table-ref to "connection-id"))))
+    (scheme-send
+     th
+     `(put ,(obj ("pid" to) ("message" msg))))))
+
+(define (gebo-send to msg)
+  (cond
+   ((scheme-pid? to) (scheme-send to msg))
+   ((javascript-pid? to) (javascript-send to msg))
+   (else
+    (error "wrong message type"))))

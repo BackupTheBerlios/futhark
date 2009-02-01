@@ -23,7 +23,7 @@
    "ehwas-sessions"
    "file-sessions"
    "pg-sessions"
-
+   
    "gebo-json"
    "gebo-resolver"
 
@@ -33,6 +33,17 @@
    "yera-mangle"
    "yera-parser"
    "yera-resolver"))
+
+(define-macro (defined? e)
+  (let(
+       (ex (gensym 'ex)))
+  `(with-exception-catcher
+    (lambda (,ex) #f)
+    (lambda ()
+      ,e #t))))
+
+
+;; add termite support
 
 (define (compile-all)
   (shell-command
@@ -61,10 +72,20 @@
 
 
 (define (make)
-  (regendata-dir "yera")
-  (regendata-dir "gebo")
   (compile-all)
   (link)
   (clean))
 
+(regendata-dir "yera")
+(regendata-dir "gebo")
 (make)
+
+(with-exception-catcher
+ (lambda (ex)
+   (pp '(Warning unable to load termite)))
+ (lambda ()
+   (load "~~/lib/termite/termite")
+   (set! files (cons "gebo-termite" files))
+   (set! output "fti")
+   (make)))
+  
