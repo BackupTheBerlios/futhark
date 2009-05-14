@@ -16,6 +16,7 @@
   execute
   c
   
+  result?
   result-status
   result-tuples
   result-notices

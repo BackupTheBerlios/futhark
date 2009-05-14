@@ -11,19 +11,34 @@
 (include "ansuz-language#.scm")
 (include "ansuz-streams#.scm")
 (include "ehwas-resolver#.scm")
+(include "ehwas-query#.scm")
+;; (include "rfc3986#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (fixnum)
          (block))
 
-(include "gebo-rts.scm")
-
 ;; library parameters
-
+;; this is the max length in seconds of a connection
+;; this means that if nothing happens within this
+;; time the server sends a n empty array signal to
+;; the client.
 (define gebo-request-length (make-parameter 250))
 
+;; this is the time that the server waits between
+;; two calls from the client.
+;; in this protocol the connection is of that type:
+;; 1) the client calls /gebo/uid;
+;; this returns an unique identifier that is used
+;; to pass identity through a stateless protocol as HTTP is.
+;; Meanwhile the server waits for this parameter seconds
+;; if no connections to /gebo/listen from the identified
+;; client, all resources are released.
+;; the same between a two listen call.
+
 (define gebo-wait-timeout (make-parameter 40))
+
 
 (define-macro (obj . ps)
   `(list->table
@@ -31,35 +46,67 @@
                  (map car ps)
                  (map cadr ps)))))
 
+(define-macro (sync l . b)
+  (let(
+       (lok (gensym 'lock))
+       (ex (gensym 'ex))
+       (r (gensym 'result)))
+    `(let(
+          (,lok ,l))
+       (mutex-lock! ,lok)
+       (with-exception-catcher
+        (lambda (,ex)
+          (mutex-unlock! ,lok)
+          (raise ,ex))
+        (lambda ()
+          (let(
+               (,r (begin ,@b)))
+            (mutex-unlock! ,lok)
+            ,r))))))
+
 (define *-uid->mailbox-* (make-table))
 (define *-mailbox->uid-* (make-table))
 
-(define-macro (uid->mailbox u)
-  `(table-ref *-uid->mailbox-* ,u))
+(define *-mb-lock-* (make-mutex))
 
-(define-macro (mailbox->uid m)
-  `(table-ref *-mailbox->uid-* ,m))
+(define (uid->mailbox u)
+  (sync *-mb-lock-* (table-ref *-uid->mailbox-* u)))
 
-(define-macro (set-mailbox-uid! u m)
-  `(begin
-     (table-set! *-uid->mailbox-* ,u ,m)
-     (table-set! *-mailbox->uid-* ,m ,u)))
+(define (mailbox->uid m)
+  (sync *-mb-lock-* (table-ref *-mailbox->uid-* m)))
+
+(define (set-mailbox-uid! u m)
+  (sync *-mb-lock-*
+        (table-set! *-uid->mailbox-* u m)
+        (table-set! *-mailbox->uid-* m u)))
 
 ;; (define-structure jid conn-id proc-id)
 
-(define *-uid->pid-* (make-table weak-values: #t))
 (define *-pid->uid-* (make-table weak-keys: #t))
+(define *-uid->pid-* (make-table weak-values: #t))
+
+(define *-pid-lock-* (make-mutex))
 
 (define (pid->uid t)
-  (or (table-ref *-pid->uid-* t #f)
-      (let(
-           (uid (make-uid)))
-        (table-set! *-pid->uid-* t uid)
-        (table-set! *-uid->pid-* uid t)
-        uid)))
+  (sync *-pid-lock-*
+        (or (table-ref *-pid->uid-* t #f)
+            (let(
+                 (uid (make-uid)))
+              (table-set! *-pid->uid-* t uid)
+              (table-set! *-uid->pid-* uid t)
+;;               (thread-start!
+;;                (make-thread
+;;                 (lambda () 
+;;                   (thread-join! t)
+;;                   (pp `(thread ended ,t ,uid))
+;;                   (table-set! *-pid->uid-* t uid)
+;;                   (table-set! *-uid->pid-* uid t))))
+              uid))))
 
 (define (uid->pid u)
-  (table-ref *-uid->pid-* u #f))
+  (sync *-pid-lock-*
+        (table-ref *-uid->pid-* u)))
+
 
 ;; behavioral transformations of mailbox as an actor
 
@@ -91,13 +138,22 @@
 
 ;; draw them in a FSM style diagram and could see how it works.
 
-(define (silently-die)
-  (let*(
-        (me (current-thread))
-        (uid (mailbox->uid me)))
-    (table-set! *-uid->mailbox-* uid)
-    (table-set! *-mailbox->uid-* me)))
+;; (define (silently-die)
+;;   (let*(
+;;         (mb (current-thread))
+;;         (uid (mailbox->uid mb)))
+;;     (sync *-mb-lock-*
+;;           (table-set! *-uid->mailbox-* uid)
+;;           (table-set! *-mailbox->uid-* mb))))
 
+(define (silently-die)
+    (sync *-mb-lock-*
+          (let(
+               (mb (current-thread)))
+            (table-set! *-uid->mailbox-* (table-ref *-mailbox->uid-* mb))
+            (table-set! *-mailbox->uid-* mb))))
+
+ 
 (define (pawned-empty-mailbox)
   (let(
        (c (thread-mailbox-next (gebo-wait-timeout) 'die)))
@@ -111,12 +167,26 @@
      (else 
       (pawned-empty-mailbox)))))
 
+;; (define (pawned-full-mailbox f r)
+;;   (let(
+;;        (c (thread-receive (gebo-wait-timeout) #f)))
+;;     (if (eq? c 'free)
+;;         (full-mailbox f r)
+;;         (silently-die))))
 (define (pawned-full-mailbox f r)
   (let(
-       (c (thread-receive (gebo-wait-timeout) #f)))
-    (if (eq? c 'free)
-        (full-mailbox f r)
-        (silently-die))))
+       (c (thread-mailbox-next (gebo-wait-timeout) 'die)))
+    (cond
+     ((eq? c 'free)
+      (thread-mailbox-extract-and-rewind)
+      (full-mailbox f r))
+
+     ((eq? c 'die)
+      (silently-die))
+
+     (else
+      (pawned-full-mailbox f r)))))
+      
 
 (define (empty-mailbox)
   (let(
@@ -171,36 +241,53 @@
     empty-mailbox)))
 
 (define (pid->json o)
-  (or (and (scheme-pid? o)
-           (obj ("id-type" "scheme")
-                ("process-id" (pid->uid o))))
+  (if (scheme-pid? o)
+      (obj ("id-type" "scheme")
+           ("process-id" (pid->uid o)))
       o))
+;;   (or (and (scheme-pid? o)
+;;            (obj ("id-type" "scheme")
+;;                 ("process-id" (pid->uid o))))
+;;       o))
 
 (define (json->pid o)
-  (or (and (table? o)
-           (string=? (table-ref o "id-type" "") "scheme")
-           (uid->pid (table-ref o "process-id")))
+  (if (and (table? o)
+           (string=? "scheme" (table-ref o "id-type" "")))
+      (uid->pid (table-ref o "process-id" ""))
       o))
+;;   (or (and (table? o)
+;;            (string=? (table-ref o "id-type" "") "scheme")
+;;            (uid->pid (table-ref o "process-id" "")))
+;;       o))
 
-(define (json-response r o)
+(define (json-response req val)
   (let(
        (str (call-with-output-u8vector
              (u8vector)
              (lambda (p)
-               (json-write o p pid->json)))))
+               (json-write val p pid->json)))))
+    
     (make-response
-     (request-version r) 200 "OK"
+     (request-version req) 200 "OK"
      (header
       ("Pragma" "no-cache")
       ("Cache-Control" "no-cache, must revalidate")
       ("Expires:" "-1")
-      ("Content-type" "application/json")
+      ("Access-Control-Allow-Origin" (table-ref (request-header req) "Origin" "*"))
+      ("Vary" "Accept-Encoding")
+      ("Content-type" "text/javascript; charset=UTF-8")
+      ("Char-Encoding" "utf-8")
       ("Content-length" (u8vector-length str)))
      (lambda (p)
        (write-subu8vector str 0 (u8vector-length str) p)))))
 
+
+;; (define (get-query req)
+;;   (url-decode (uri-query (request-uri req))))
+
 (define (gebo-uid req)
   (let(
+       (qry (request-parse-query req))
        (uid (make-uid))
        (mb (make-mailbox)))
     (set-mailbox-uid! uid mb)
@@ -208,9 +295,9 @@
     (json-response req uid)))
 
 (define (gebo-listen req)
-  (let(
-       (mb (uid->mailbox
-            (request-query req))))
+  (let*(
+        (qry (request-parse-query req))
+        (mb (uid->mailbox (table-ref qry "uid" ""))))
     (thread-send mb 'free)
     (thread-send mb `(get ,(current-thread)))
     (let*(
@@ -218,37 +305,66 @@
           (res (json-response req q)))
       (thread-send mb 'pawn)
       res)))
+  
+;; (define (gebo-notify req)
+;;   (let*(
+;;         (qry (request-parse-query req))
+;;         (ms (json-read
+;;              (request-port req)
+;;              json->pid)))
+;;     (for-each (lambda (m)
+;;                 (gebo-send (table-ref m "pid") (table-ref m "message")))
+;;               ms)
+;;     (json-response (table-ref qry "callback" #f) req #t)))
+
+;; (define (string->u8vector s)
+;;   (call-with-output-u8vector
+;;    (u8vector)
+;;    (lambda (p)
+;;      (display s p))))
 
 (define (gebo-notify req)
-  (with-exception-catcher
-   (lambda (ex)
-     (pp (unbound-global-exception-variable ex))
-     (raise ex))
-   (lambda () 
-     (let(
-          (ms (json-read
-               (request-port req)
-               json->pid)))
-       (for-each (lambda (m)
-                   (gebo-send (table-ref m "pid") (table-ref m "message")))
-                 ms)
-       (json-response req #t)))))
+  (let*(
+        (qry (request-parse-query req))
+        (ms (call-with-input-string
+             (table-ref qry "data" "")
+             (lambda (p)
+               (json-read p json->pid)))))
+    (for-each
+     (lambda (m)
+       (gebo-send (table-ref m "pid") (table-ref m "message")))
+     ms)
+    (json-response req #t)))
+
+(include "gebo-rts.scm")
 
 (define (gebo-rts req)
   (make-response
    (request-version req) 200 "OK"
    (header    
-    ("Content-type" "text/plain")
+    ("Content-type" "text/javascript")
     ("Content-length" *-rts-size-*))
    (lambda (p)
      (write-subu8vector *-rts-data-* 0 *-rts-size-* p))))
+
+(define (gebo-options req)
+  (make-response
+   (request-version req) 200 "OK"
+   (header
+    ("Access-Control-Allow-Origin" (table-ref (request-header req) "Origin" ""))
+    ("Access-Control-Allow-Methods" "POST, GET, OPTIONS")
+    ("Access-Control-Allow-Headers" (table-ref (request-header req) "Access-Control-Request-Headers" ""))
+    ("Access-Control-Max-Age" "1728000")
+    ("Vary" "Accept-Encoding")
+    ("Content-length" 0))
+   (lambda (p) #f)))
 
 (define (gebo-resolver req)
   (let(
        (path (request-path req)))
     (cond
-     ((equal? path '("gebo" "rts.js"))
-      (gebo-rts req))
+     ((string=? (request-method req) "OPTIONS")
+      (gebo-options req))
      
      ((equal? path '("gebo" "uid"))
       (gebo-uid req))
@@ -259,8 +375,10 @@
      ((equal? path '("gebo" "notify"))
       (gebo-notify req))
      
+     ((equal? path '("gebo" "rts.js"))
+      (gebo-rts req))
+     
      (else #f))))
-
 
 (define-macro (cond-termite a b)
   (define-macro (defined? e)
@@ -270,15 +388,19 @@
   
   (if (defined? termite#!) a b))
       
-(define-macro (pid)
-  (if (defined? termite#pid?) 'termite#pid? 'thread?))
-
 (define scheme-pid?
   (cond-termite termite#pid? thread?))
 
-  (define (javascript-pid? p)
+(define (javascript-pid? p)
   (and (table? p)
        (string=? (table-ref p "id-type" "") "javascript")))
+
+;; (define (mixed-pid? p)
+;;   (and (table? p)
+;;        (string=? (table-ref p "id-type" "") "scheme")))
+
+;; (define (mixed-send to msg)
+;;   (scheme-send (uid->pid (table-ref to "process-id" "")) msg))
 
 (define scheme-send
   (cond-termite termite#! thread-send))
@@ -294,5 +416,7 @@
   (cond
    ((scheme-pid? to) (scheme-send to msg))
    ((javascript-pid? to) (javascript-send to msg))
+;;    ((mixed-pid? to) (mixed-send to msg))
    (else
-    (error "wrong message type"))))
+    (raise `("wrong address type" ,to)))))
+

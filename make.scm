@@ -29,6 +29,9 @@
 
    "postgresql"
 
+   "openssl"
+   "openssl-ports"
+
    "yera-compile"
    "yera-mangle"
    "yera-parser"
@@ -54,7 +57,7 @@
 (define (link)
   (shell-command
    (apply string-append
-          `("gcc -shared -D___DYNAMIC -fPIC -I/usr/local/Gambit-C/current/include"
+          `("gcc -shared -lssl -lcrypto -ldl -D___DYNAMIC -fPIC -I/usr/local/Gambit-C/current/include"
             ,@(map (lambda (f) (string-append " " f ".c")) files)
             " " ,output ".o1.c -o " ,output ".o1"))))
 
@@ -76,8 +79,8 @@
   (link)
   (clean))
 
-(regendata-dir "yera")
-(regendata-dir "gebo")
+;(regendata-dir "yera")
+;(regendata-dir "gebo")
 (make)
 
 (with-exception-catcher

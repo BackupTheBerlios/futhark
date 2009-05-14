@@ -23,6 +23,7 @@
 ;;            | (static <directory>)
 ;;            | (dynamic <directory>)
 ;;            | (files <directory>)
+;;            | (paths <assoc> ...)
 
 ;; <test>   ::= (all)
 ;;            | (none)
@@ -35,6 +36,7 @@
 ;; <exts> ::= <symbol>
 
 ;; <table-def> ::= (define-table <symbol> <assoc> ...)
+;;                 (define <symbol> (table <assoc> ...))
 ;;               | (define <symbol> (make-table ...))
 ;;               | (define <symbol> (list->table ...))
 
@@ -77,6 +79,8 @@
   ;; utility macros
   test
   test->function
+  table
+  path
   ))
   
     
@@ -87,6 +91,7 @@
   (let*(
         (default '((port 80)
                    (host *)
+                   (ssl? #f)
                    (resolve)))
         (getv
          (lambda (n)
@@ -96,7 +101,8 @@
     `(make-server
       ,(symbol->string (cadr (getv 'host)))
       ,(cadr (getv 'port))
-      (make-guarded-resolver (orelse ,@(cdr (getv 'resolve)) not-found-resolver)))))
+      (make-guarded-resolver (orelse ,@(cdr (getv 'resolve)) not-found-resolver))
+      ,(cadr (getv 'ssl?)))))
 
 (define-macro (orelse r . rs)
   (if (null? rs) r
@@ -165,9 +171,10 @@
        (_ (gensym '_)))
     `(lambda (,_) #f)))
 
-(define-macro (static s)
+(define-macro (static s #!optional (dir? #f))
   `(make-filesystem-resolver
-    ,(symbol->string s)))
+    ,(symbol->string s)
+    ,dir?))
 
 (define-macro (dynamic s)
   `(make-serverpage-resolver
@@ -186,18 +193,24 @@
     (deny  (extensions .scm .o1 .ehwas .yera)
            (static ,s))))
 
+(define-macro (table . as)
+  `(list->table
+    (list ,@(map (lambda (a)
+                   `(cons ',(map symbol->string (car a)) 
+                          ,(cadr a)))
+                 as))
+    init: #f))
+  
 (define-macro (define-table n . as)
-  `(define ,n
-     (list->table
-      (list ,@(map (lambda (a)
-                     `(cons ',(map symbol->string (car a)) 
-                            ,(cadr a)))
-                   as))
-      init: #f)))
+  `(define ,n (table ,@as)))
 
 (define-macro (tables . ts)
   `(orelse
     ,@(map (lambda (t) `(make-table-resolver ,t)) ts)))
+
+(define-macro (paths . ts)
+  `(tables (table ,@ts)))
+                           `
 
 (define-macro (set-resolver! t s v)
   `(table-set! t (map symbol->string s) v))

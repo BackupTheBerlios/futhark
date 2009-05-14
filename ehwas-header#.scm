@@ -9,7 +9,6 @@
                (set! ,k ,e)
                ,k))))))
 
-
 (define response
   (make-empty-response (request-version request) 200 "OK"))
 
@@ -17,39 +16,41 @@
   (wait (or (request-cookies request)
             (make-table))))
 
-(define query
-  (wait
-   (let(
-        (mtd (request-method request))
-        (ats (rfc822-attributes
-              (table-ref
-               (request-header request)
-               "Content-Type"
-               ""))))
-     (cond
-      ((string=? mtd "GET")
-       (url-decode (uri-query (request-uri request))))
+;; (define query
+;;   (wait
+;;    (let(
+;;         (mtd (request-method request))
+;;         (ats (rfc822-attributes
+;;               (table-ref
+;;                (request-header request)
+;;                "Content-Type"
+;;                ""))))
+;;      (cond
+;;       ((string=? mtd "GET")
+;;        (url-decode (uri-query (request-uri request))))
       
-      ((and (string=? mtd "POST")
-            (string=? (car ats) "multipart/form-data"))
-       (data-decode
-        (cdr (assoc "boundary" (cdr ats)))
-        (request-port request)))
+;;       ((and (string=? mtd "POST")
+;;             (string=? (car ats) "multipart/form-data"))
+;;        (data-decode
+;;         (cdr (assoc "boundary" (cdr ats)))
+;;         (request-port request)))
       
-      ((and (string=? mtd "POST")
-            (string=? (car ats) "application/x-www-form-urlencoded"))
-       (let*(
-             (len (string->number
-                   (table-ref
-                    (request-header request)
-                    "Content-Length")))
-             (buf (make-string len)))
-         (read-substring buf 0 len (request-port request))
-         (url-decode buf)))
+;;       ((and (string=? mtd "POST")
+;;             (string=? (car ats) "application/x-www-form-urlencoded"))
+;;        (let*(
+;;              (len (string->number
+;;                    (table-ref
+;;                     (request-header request)
+;;                     "Content-Length")))
+;;              (buf (make-string len)))
+;;          (read-substring buf 0 len (request-port request))
+;;          (url-decode buf)))
 
-      (else
-       (error "unknown form data encoding"))))))
-          
+;;       (else
+;;        (error "unknown form data encoding"))))))
+
+(define query (wait (request-parse-query request)))
+
 (define session
   (wait
    (let*(

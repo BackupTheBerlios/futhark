@@ -53,14 +53,14 @@
           (<- cs (more-text))
           (return (cons c cs)))))
 
-(define-parser (text)
+(define-parser (text_)
   (>> (<- l (more-text))
       (return (lambda (p)
                 (if (not (null? l))
                     (begin
-                      (display "(echo " p)
+                      (print port: p "(echo ")
                       (write (list->string l) p)
-                      (display ")" p)))))))
+                      (print port: p ")")))))))
   
 (define-parser (more-string)
   (<> (>> (char #\")
@@ -92,11 +92,11 @@
 
 (define-parser (scheme)
   (>> (<- l (more-scheme))
-      (return (lambda (p) (display l p)))))
+      (return (lambda (p) (print port: p l)))))
 
 (define-parser (server-page)
   (>>
-   (<- t0 (text))
+   (<- t0 (text_))
    (<- ss (more-server-page))
    (return
     (lambda (p)
@@ -105,7 +105,7 @@
 
 (define-parser (more-server-page)
   (<> (>> (<- t0 (scheme))
-          (<- s0 (text))
+          (<- s0 (text_))
           (<- ss (more-server-page))
           (return
            (lambda (p)
@@ -124,14 +124,14 @@
 ;; (define (scheme->application if of)
 ;;   (call-with-output-file of
 ;;     (lambda (op)
-;;       (display
+;;       (print port: op
 ;;        (list
 ;;         (map (lambda (s) `("(##include \"" ,s "\")\n")) (ehwas-pages-includes))
 ;;         "(ehwas-pages#registry-set! \"" (path-strip-extension if) "\" (lambda (request)\n"
 ;;         "(include \"" (ehwas-pages-header) "\")\n"
 ;;         "(include \"" (path-strip-directory if) "\")\n"
 ;;         "response))")
-;;         op))))
+;;         ))))
                
 (define (scheme->application if of)
   (call-with-output-file of
@@ -141,15 +141,15 @@
          (write `(##include ,s) op)
          (newline op))
        (ehwas-pages-includes))
-      (display "(ehwas-pages#registry-set! " op)
+      (print port: op "(ehwas-pages#registry-set! ")
       (write (path-strip-extension if) op)
-      (display "(lambda (request)" op)
+      (print port: op "(lambda (request)")
       (newline op)
       (write `(include ,(ehwas-pages-header)) op)
       (newline op)
       (write `(include ,if) op)
       (newline op)
-      (display "response))" op))))
+      (print port: op "response))"))))
   
 ; (define (application->object if of)
 ;   (let(

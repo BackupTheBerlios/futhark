@@ -77,8 +77,8 @@
         (send-netint (- n 1) (quotient i 256) p))))
 
 (define (send-string s p)
-  (display s p)
-  (display #\nul p))
+  (print port: p s)
+  (print port: p #\nul))
 
 (define (send-bytes buf p)
   (write-subu8vector buf 0 (u8vector-length buf) p))
@@ -249,7 +249,7 @@
    ((char=? c #\F) "File")
    ((char=? c #\L) "Line")
    ((char=? c #\R) "Routine")
-   (else (string-append "Unknown field: " (string c)))))
+   (else (string-append "Unknown field '" (string c) "'"))))
     
 (define (recv-field-description p)
   (let*(
@@ -446,20 +446,20 @@
            (let(
                 (c (u8vector-ref u j)))
              (cond
-              ((= c 0) (display "\\\\000" p)) ;; tirare via questa che è un nonprintable
-              ((= c 39) (display "\\\\047" p))
-              ((= c 92) (display "\\\\134" p))
-              ((nonprintable? c) (display-escape c p))
-              (else (display (integer->char c) p)))
+              ((= c 0) (print port: p "\\\\000")) ;; tirare via questa che è un nonprintable
+              ((= c 39) (print port: p "\\\\047"))
+              ((= c 92) (print port: p "\\\\134"))
+              ((nonprintable? c) (print-escape c p))
+              (else (print (integer->char c) p)))
              (for (+ j 1))))))))
 
-(define (display-escape c #!optional (p (current-output-port)))
+(define (print-escape c #!optional (p (current-output-port)))
   (let*(
         (a (quotient c 64))
         (ar (remainder c 64))
         (b (quotient ar 8))
         (c (remainder ar 8)))
-  (display `("\\\\" ,a ,b ,c) p)))
+  (print port: p `("\\\\" ,a ,b ,c))))
 
 ;; (define (read-string p)
 ;;   (call-with-output-string
@@ -485,13 +485,16 @@
 ;;            (loop))))))))
 
 (define (read-string p)
-  (read-line p #\nul))
+  (let(
+       (s (read-line p #\nul)))
+    (if (eof-object? s) "" s)))
                
                
 (define (really-init-readers #!optional (con (current-connection)))
   (set-readers!
    `(
      ("bool" ,pg-read-bool)
+     ("boolean" ,pg-read-bool)
      ("char" ,read-string)
      ("varchar" ,read-string)
      ("text" ,read-string)
@@ -552,7 +555,7 @@
    (call-with-output-string
     ""
     (lambda (p)
-      (display w p)))
+      (print port: p w)))
    con)
   (recv-result con))
 
@@ -577,20 +580,22 @@
               (let(
                    (c (string-ref s j)))
                 (cond
-                 ((char=? c #\\) (display "\\" p))
-                 ((char=? c #\") (display "\\\"" p))
-                 ((char=? c #\') (display "\\'" p))
-                 ((char=? c #\backspace) (display  "\\b" p))
-                 ((char=? c #\newline) (display "\\n" p))
-                 ((char=? c #\linefeed) (display "\\f" p))
-                 ((char=? c #\return) (display "\\r" p))
-                 ((char=? c #\tab) (display "\\t" p))
-                 (else (display c p)))
+                 ((char=? c #\\) (print port: p "\\\\"))
+                 ((char=? c #\") (print port: p "\\\""))
+                 ((char=? c #\') (print port: p "\\'"))
+                 ((char=? c #\backspace) (print  port: p "\\b"))
+                 ((char=? c #\newline) (print port: p "\\n"))
+                 ((char=? c #\linefeed) (print port: p "\\f"))
+                 ((char=? c #\return) (print port: p "\\r"))
+                 ((char=? c #\tab) (print port: p "\\t"))
+                 (else (print port: p c)))
                 (for (+ j 1))))))))
            
 (define (c f)
   (cond
    ((null? f) "NULL")
+   ((eq? f #t) "TRUE")
+   ((eq? f #f) "FALSE")
    
    ((or (char? f) (string? f))
     `("E'" ,(escape f) #\'))

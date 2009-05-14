@@ -37,25 +37,21 @@
   (lambda (p) (write w p)))
 
 (define (displayer w)
-  (lambda (p) (display w p)))
+  (lambda (p) (print port: p w)))
 
-(define (response-write r . p)
+(define (response-write r #!optional (p (current-output-port)))
   (let(
-       (p (if (null? p) (current-output-port) (car p)))
        (version (response-version r))
        (code (response-code r))
        (status (response-status r))
        (headers (response-headers r))
        (printer (response-printer r)))
     
-    (display
-     (list "HTTP/" (car version) "." (cdr version) " " code " " status "\n") p)
-    
+    (print port: p
+     (list "HTTP/" (car version) "." (cdr version) " " code " " status "\n"))
     (table-for-each
      (lambda (k v)
-       (display (list k ": " v #\newline) p))
+       (print port: p (list k ": " v #\newline)))
      headers)
-    
     (newline p)
-    
     (printer p)))

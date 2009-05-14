@@ -13,7 +13,7 @@
        (_p (gensym '_p)))
     `(let(
           (,_p ,(car p)))
-       ,@(map (lambda (e) `(display ,e ,_p)) es))))
+       ,@(map (lambda (e) `(print port: ,_p ,e)) es))))
   
 (define let? (test let))
 (define lambda? (test lambda))

@@ -10,4 +10,5 @@
   with-prefix-resolver
   allow-resolver
   deny-resolver
+  buffer-size
   ))

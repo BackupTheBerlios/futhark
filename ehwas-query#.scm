@@ -7,4 +7,5 @@
   dataencoded-query
   url-decode
   rfc822-attributes
-  data-decode))
+  data-decode
+  request-parse-query))

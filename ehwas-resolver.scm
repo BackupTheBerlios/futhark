@@ -6,12 +6,16 @@
 (include "ehwas-request#.scm")
 (include "rfc3986#.scm")
 (include "ehwas-errors#.scm")
+(include "ehwas-template#.scm")
 (include "ehwas-resolver#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (fixnum)
          (block))
+
+;; this parameter defines the size of buffer copying file parts
+(define buffer-size (make-parameter 4096))
 
 (define not-found-resolver
   (lambda (request)
@@ -106,43 +110,70 @@
           (response-headers response)
           (lambda (p) (write-subu8vector buffer 0 size p))))))
 
-(define (make-cached-resolver resolve)
+(define cache-timeout (make-parameter (* 30 60)))
+
+(define (make-cached-resolver resolve #!optional)
   (let(
        (m0 (make-mutex))
-       (cache (make-table weak-keys: #t
-                          weak-values: #t
+       (cache (make-table weak-values: #t
                           init: #f)))
     (lambda (request)
-      (let(
-           (key (request-uri-string request)))
-       (define response)
-       (mutex-lock! m0)
-       (set! response (table-ref cache key))
-       (cond
-        ((mutex? response)
-         (let ((m1 response))
-           (mutex-unlock! m0)
-           (mutex-lock! m1)
-           (set! response (table-ref cache key))
-           (mutex-unlock! m1)))
+      (let*(
+            (key (request-uri-string request))
+            (val (table-ref cache key)))
+        (or (and val (thread-send (cdr val) 'touch) (car val))
+            (let*(
+                  (orig (with-buffered-printer (resolve request)))
+                  (val (cons orig #f)))
+              (set-cdr! val
+                        (thread-start!
+                         (make-thread
+                          (lambda ()
+                            (let cont ()
+                              (let(
+                                   (c (thread-receive (cache-timeout) #f)))
+                                val
+                                (if c (cont))))))))
+              (table-set! cache key val)
+              orig))))))
+            
+;; (define (make-cached-resolver resolve)
+;;   (let(
+;;        (m0 (make-mutex))
+;;        (cache (make-table weak-keys: #t
+;;                           weak-values: #t
+;;                           init: #f)))
+;;     (lambda (request)
+;;       (let(
+;;            (key (request-uri-string request)))
+;;        (define response)
+;;        (mutex-lock! m0)
+;;        (set! response (table-ref cache key))
+;;        (cond
+;;         ((mutex? response)
+;;          (let ((m1 response))
+;;            (mutex-unlock! m0)
+;;            (mutex-lock! m1)
+;;            (set! response (table-ref cache key))
+;;            (mutex-unlock! m1)))
 
-        ((not response)
-         (let(
-              (m1 (make-mutex)))
-           (mutex-lock! m1)
-           (table-set! cache key m1)
-           (mutex-unlock! m0)
-           (set! response (with-buffered-printer (resolve request)))
-           (if response
-               (table-set! cache key response)
-               (table-set! cache key))
-           (mutex-unlock! m1)))
+;;         ((not response)
+;;          (let(
+;;               (m1 (make-mutex)))
+;;            (mutex-lock! m1)
+;;            (table-set! cache key m1)
+;;            (mutex-unlock! m0)
+;;            (set! response (with-buffered-printer (resolve request)))
+;;            (if response
+;;                (table-set! cache key response)
+;;                (table-set! cache key))
+;;            (mutex-unlock! m1)))
 
-        (else
-         (mutex-unlock! m0)))
-        response))))
+;;         (else
+;;          (mutex-unlock! m0)))
+;;         response))))
 
-(define (make-filesystem-resolver root)
+(define (make-filesystem-resolver root #!optional (dir? #f))
   (lambda (request)
     (if (null? (uri-path (request-uri request)))
         (make-directory-response (request-version request) 200 "OK" "" (string-append root "/"))
@@ -152,14 +183,15 @@
           (cond
            ((not (file-exists? full)) #f)
            ((regular? full) (make-file-response (request-version request) 200 "OK" full))
-           ((directory? full) (make-directory-response (request-version request) 200 "OK" local full))
+           ((and (directory? full) dir?) (make-directory-response (request-version request) 200 "OK" local full))
            (else #f))))))
 
-(define buffer-size 4096)
+
 (define (make-file-response v c s full)
-  (let(
-       (buffer (make-u8vector buffer-size))
-       (size (file-size full)))
+  (let*(
+        (buf-size (buffer-size))
+        (buffer (make-u8vector buf-size))
+        (size (file-size full)))
     (make-response
      v c s
      (header ("Content-type" (content-type (path-extension full)))
@@ -171,7 +203,7 @@
            (let loop ((j 0))
              (if (< j size)
                  (let(
-                      (delta (read-subu8vector buffer 0 buffer-size in)))
+                      (delta (read-subu8vector buffer 0 buf-size in)))
                    (write-subu8vector buffer 0 delta out)
                    (loop (+ j delta)))))))))))
        
@@ -179,21 +211,21 @@
   (let(
        (str (call-with-output-string
              ""
-             (body
+             (text
               "<xml version = \"1.0\">\n"
-              "<xhtml xmlns=\"http://www.w3.org/1999/xhtml\">\n"
-              "<body>"
-              (map
-               (lambda (name) (list "<a href = \"" local "/" name "\">" name "</a><br/>\n"))
-               (directory-files full))
-              "</body></xhtml>\n"))))
+              (xml
+               (xhtml (@ (xmln "http://www.w3.org/1999/xhtml"))
+                      (body
+                       ,(map (lambda (name)
+                               (xml (p (a (@ (href ,(string-append local "/" name)))))))
+                             (directory-files full)))))))))
     (make-response
      v c s
      (header
       ("Content-type" "text/html")
       ("Content-length" (string-length str))
       ("Pragma" "no-cache"))
-     (body str))))
+     (text str))))
 
 (define (with-index-resolver file resolver)
   (lambda (request)
@@ -225,7 +257,7 @@
 
 (define (make-table-resolver table)
   (lambda (req)
-    ((table-ref table (request-path req)) req)))
+    ((table-ref table (request-path req) (lambda (_) #f)) req)))
 
 (define (remove-base base val)
   (cond
@@ -263,5 +295,3 @@
   (allow-resolver
    (lambda (req) (not (fn req)))
    resolver))
-
-               

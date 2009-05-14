@@ -24,9 +24,9 @@
        (rd2 (random-integer *-uid-max-*))
        (rd3 (random-integer *-uid-max-*)))
     (string-append
-     (number->string (bitwise-xor tm rd0) 16) ":"
-     (number->string (bitwise-xor tm rd1) 16) ":"
-     (number->string (bitwise-xor tm rd2) 16) ":"
+     (number->string (bitwise-xor tm rd0) 16) ; ":"
+     (number->string (bitwise-xor tm rd1) 16) ; ":"
+     (number->string (bitwise-xor tm rd2) 16) ; ":"
      (number->string (bitwise-xor tm rd3) 16))))
 
 (define (make-uid)

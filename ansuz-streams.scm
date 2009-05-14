@@ -37,7 +37,7 @@
 (define (stream->port s p)
   (if (eof-object? (stream-car s)) '()
       (begin
-        (display (stream-car s) p)
+        (print port: p (stream-car s))
         (stream->port (stream-cdr s) p))))
 
 (define (stream-append s . ss)
