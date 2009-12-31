@@ -1,11 +1,11 @@
-(##namespace ("uids#"))
+(##namespace ("utils-uids#"))
 (##include "~~/lib/gambit#.scm")
 
 (declare
   (standard-bindings)
   (extended-bindings)
   (block)
-  (not safe)
+  ;;(not safe)
   (fixnum)
   )
 

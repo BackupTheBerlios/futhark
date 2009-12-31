@@ -1,1 +1,0 @@
-(##namespace ("uids#" make-uid))
