@@ -89,7 +89,7 @@ var ActorsRemote = function () {
 
 	var http_init_in = function () {
 	    var con = XHR();
-	    con.open("GET", host + "/gebo/listen?" + connection_id, true);
+	    con.open("GET", host + "/gebo/listen?uid=" + connection_id, true);
 	    con.onreadystatechange = function () {
 		if (con.readyState == 4 && con.status == 200) {
 		    con.onreadystatechange = null;

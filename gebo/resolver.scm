@@ -2,21 +2,22 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "gebo-json#.scm")
-(include "base64#.scm")
-(include "uids#.scm")
-(include "ehwas-request#.scm")
-(include "ehwas-response#.scm")
+(include "json#.scm")
 
-(include "ansuz-language#.scm")
-(include "ansuz-streams#.scm")
-(include "ehwas-resolver#.scm")
-(include "ehwas-query#.scm")
+(include "../encode/base64#.scm")
+(include "../utils/uids#.scm")
+(include "../ehwas/request#.scm")
+(include "../ehwas/response#.scm")
+
+(include "../ansuz/language#.scm")
+(include "../ehwas/resolver#.scm")
+(include "../ehwas/query#.scm")
 ;; (include "rfc3986#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (fixnum)
+         ;; (not safe)
          (block))
 
 ;; library parameters
@@ -263,10 +264,9 @@
 (define (json-response req val)
   (let(
        (str (call-with-output-u8vector
-             (u8vector)
+             (list char-encoding: 'UTF-8)
              (lambda (p)
                (json-write val p pid->json)))))
-    
     (make-response
      (request-version req) 200 "OK"
      (header
@@ -275,7 +275,7 @@
       ("Expires:" "-1")
       ("Access-Control-Allow-Origin" (table-ref (request-header req) "Origin" "*"))
       ("Vary" "Accept-Encoding")
-      ("Content-type" "text/javascript; charset=UTF-8")
+      ("Content-type" "application/json; charset=UTF-8")
       ("Char-Encoding" "utf-8")
       ("Content-length" (u8vector-length str)))
      (lambda (p)
@@ -325,18 +325,19 @@
 
 (define (gebo-notify req)
   (let*(
-        (qry (request-parse-query req))
-        (ms (call-with-input-string
-             (table-ref qry "data" "")
-             (lambda (p)
-               (json-read p json->pid)))))
+;;         (qry (request-parse-query req))
+;;         (ms (call-with-input-string
+;;              (table-ref qry "data" "")
+;;              (lambda (p)
+;;                (json-read p json->pid)))))
+        (ms (json-read (request-port req) json->pid)))
     (for-each
      (lambda (m)
        (gebo-send (table-ref m "pid") (table-ref m "message")))
      ms)
     (json-response req #t)))
 
-(include "gebo-rts.scm")
+(include "rts.scm")
 
 (define (gebo-rts req)
   (make-response

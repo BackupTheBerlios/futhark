@@ -2,15 +2,14 @@
 
 (##include "~~/lib/gambit#.scm")
            
-(include "ansuz-streams#.scm")
-(include "ansuz-language#.scm")
-(include "ansuz-kernel#.scm")
-(include "ansuz-extras#.scm")
+(include "../ansuz/language#.scm")
+(include "../ansuz/kernel#.scm")
+(include "../ansuz/extras#.scm")
 
 (declare
  (standard-bindings)
  (extended-bindings)
- (not safe)
+ ;;(not safe)
  (block)
  )
 
@@ -225,36 +224,21 @@
     (if (null? l) i
         (f (car l) (fold (cdr l) i)))))
 
-;; this is very dirty about using buffered ports
+(define (json-read  #!optional (port (current-input-port)) (tr (lambda (x) x)))
+  (run (json-value tr) port))
 
-(define (string->u8vector s)
-  (let(
-       (r (make-u8vector (string-length s))))
-    (let loop ((c 0))
-      (if (>= c (string-length s)) r
-          (begin
-            (u8vector-set! r c (char->integer (string-ref s c)))
-            (loop (+ c 1)))))))
+;; (define (json-read #!optional (port (current-input-port)) (tr (lambda (x) x)))
+;;   (let(
+;;        (s1 (empty-buffer port)))
+;;     (call-with-input-u8vector
+;;      (list init: s1
+;;            char-encoding: 'UTF-8)
+;;      (lambda (p0)
+;;        (run (json-value tr)
+;;             (stream-append
+;;              (port->stream p0)
+;;              (port->stream port)))))))
 
-(define (empty-buffer port)
-  (let*(
-        (ln (input-port-characters-buffered port))
-        (s (make-string ln)))
-    (read-substring s  0 ln port)
-    (string->u8vector s)))
-
-(define (json-read #!optional (port (current-input-port)) (tr (lambda (x) x)))
-  (let(
-       (s1 (empty-buffer port)))
-    (call-with-input-u8vector
-     (list init: s1
-           char-encoding: 'UTF)
-     (lambda (p0)
-       (run (json-value tr)
-            (stream-append
-             (port->stream p0)
-             (port->stream port)))))))
-   
 ;; scheme to json transform stuff;
  
 (define (json-write o #!optional (p (current-output-port)) (tr (lambda (x) x)))
@@ -271,9 +255,29 @@
      ((table? o) (table-write o p tr))
      ((pair? o) (list-write o p tr))
      ((number? o) (print port: p o))
-     ((string? o) (write o p))
+     ((string? o) (string-write o p))
      (else (raise "can't convert this object to json")))))
-  
+
+(define (string-write o p)
+  (print port: p #\")
+  (let for ((j 0))
+    (if (< j (string-length o))
+        (let(
+             (c (string-ref o j)))
+          
+          (cond
+           ((or (char=? c #\") (char=? c #\\))
+            (print port: p #\\)
+            (print port: p c))
+           
+           ((char=? c #\newline)
+            (print port: p "\\n"))
+
+           (else
+            (print port: p c)))
+           (for (+ j 1)))))
+  (print port: p #\"))
+
 (define (table-write o p tr)
   (let(
        (fst #t))

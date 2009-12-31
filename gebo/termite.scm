@@ -2,7 +2,7 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "gebo-resolver#.scm")
+(include "resolver#.scm")
 
 (##include "~~/lib/termite/termite#.scm")
 (##namespace ("gebo-termite#" ! !? on))
@@ -10,6 +10,7 @@
 (declare (standard-bindings)
          (extended-bindings)
          (fixnum)
+         ;;(not safe)
          (block))
 
 (define ! gebo-send)
