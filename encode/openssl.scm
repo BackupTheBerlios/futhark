@@ -1,11 +1,12 @@
-(##namespace ("openssl#"))
+(##namespace ("encode-openssl#"))
 (##include "~~/lib/gambit#.scm")
 
 (declare
  (fixnum)
  (standard-bindings)
  (extended-bindings)
- (block)
+ ;; (block)
+ ;; (not safe)
  )
 (c-declare #<<end-of-decls
            
@@ -109,6 +110,15 @@ end-of-init
   (c-lambda (SSL_METHOD*) SSL_CTX*
     "SSL_CTX_new"))
 
+(define ssl-ctx-use-certificate-chain-file
+  (c-lambda (SSL_CTX* char-string) int
+    "SSL_CTX_use_certificate_chain_file"))
+
+(define ssl-ctx-load-verify-locations
+  (c-lambda (SSL_CTX* char-string char-string) int
+    "SSL_CTX_load_verify_locations"))
+
+
 (define SSL_FILETYPE_PEM 1) ;; X509_FILETYPE_PEM in x509.h
 (define SSL_FILETYPE_ASN1 2) ;; X509_FILETYPE_ASN1 in x509.h
   
@@ -130,6 +140,14 @@ end-of-init
 (define ssl-ctx-set-session-id-context
   (c-lambda (SSL_CTX* char-string unsigned-int) int
     "___result=SSL_CTX_set_session_id_context(___arg1,(unsigned char*) ___arg2, ___arg3);"))
+
+;; (define ssl-ctx-set-session-cache-mode
+;;   (c-lambda (SSL_CTX* long-int) void
+;;       "SSL_CTX_set_session_cache_mode"))
+
+;; (define ssl-ctx-get-session-cache-mode
+;;   (c-lambda (SSL_CTX*) long-int
+;;       "SSL_CTX_get_session_cache_mode"))
 
 ;; (include "more-ssl-ctx-context")
 
@@ -298,6 +316,22 @@ end-bio-write
     "SSL_CIPHER_get_version"))
 
 ;;; ERRORS
+(define err-get-error
+  (c-lambda () int64
+    "ERR_get_error"))
+
+(define err-peek-error
+  (c-lambda () int64
+    "ERR_peek_error"))
+
+(define err-peek-last-error
+  (c-lambda () int64
+    "ERR_peek_last_error"))
+
+(define err-error-string
+  (c-lambda (int64) char-string
+    "___result = ERR_error_string (___arg1, NULL);"))
+    
 
 (define ssl-get-error
   (c-lambda (SSL* int) int

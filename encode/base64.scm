@@ -6,7 +6,7 @@
 
 ;==============================================================================
 
-(##namespace ("base64#"))
+(##namespace ("encode-base64#"))
 
 (##include "~~/lib/gambit#.scm")
 
@@ -16,7 +16,7 @@
   (standard-bindings)
   (extended-bindings)
   (block)
-  (not safe)
+  ;;(not safe)
   (fixnum)
 )
 

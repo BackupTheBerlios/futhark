@@ -1,5 +1,5 @@
 (##namespace
- ("openssl#"
+ ("encode-openssl#"
   ssl-v2-client-method
   ssl-v2-server-method
   ssl-v2-method
@@ -15,10 +15,14 @@
 
   ssl-ctx-new
   ssl-ctx-use-certificate-file
+  ssl-ctx-use-certificate-chain-file
+  ssl-ctx-load-verify-locations
   ssl-ctx-use-private-key-file
   ssl-ctx-check-private-key
   ssl-ctx-free
   ssl-ctx-set-session-id-context
+  ssl-ctx-set-session-cache-mode
+  ssl-ctx-get-session-cache-mode
 
   ssl-new
   ssl-accept
@@ -49,6 +53,11 @@
 
   bio-s-mem
 
+  err-get-error
+  err-peek-error
+  err-peek-last-error
+  err-error-string
+  
   ssl-get-error
   SSL_ERROR_NONE
   SSL_ERROR_SSL
