@@ -1,8 +1,8 @@
 (namespace ("chatroom#"))
 
 (##include "~~/lib/gambit#.scm")
-(include "../../gebo-resolver#.scm")
-(include "../../gebo-match#.scm")
+(include "../../gebo/resolver#.scm")
+(include "../../gebo/match#.scm")
 
 (define *users* (make-table))
 

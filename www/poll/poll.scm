@@ -1,7 +1,7 @@
 (namespace ("poll#"))
 
 (##include "~~/lib/gambit#.scm")
-(include "../../gebo-resolver#.scm")
+(include "../../gebo/resolver#.scm")
 
 (define (remove us u)
   (cond

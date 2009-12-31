@@ -5,7 +5,7 @@ files "../prelude.yera";
 ProgressBarI = interface (progressbar);
 
 ProgressBar = struct : ProgressBarI ->
-    open YeraCore, YeraDom, YeraMath, YeraHtml;
+    open YeraCore, YeraDom, YeraMath, YeraHtml, YeraUtils;
     files "progressbar.yera";
 end;
 
@@ -53,8 +53,8 @@ end;
 Main = struct : (main) ->
    open YeraCore, YeraDom, YeraMath, YeraUserevent,
         YeraHtml, ProgressBar, YeraUtils,
-        Wait, Query, Result;
-   files "main.yera";
+  Wait, Query, Result;
+  files "main.yera";
 end;
 
 

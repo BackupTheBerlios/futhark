@@ -20,7 +20,7 @@ showQuery q ch res = q untilI ch and futr res;
 -- showQuery q ch res = q;
                      
 pcr = 0 untilI choice and const (ram 2000);
-pcq = 0 untilI end_loading and const (ram 1000);
+pcq = 0 untilI end_loading and const (ram 2000);
 
 res = result pcr;
 

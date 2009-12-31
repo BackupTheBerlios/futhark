@@ -4,3 +4,29 @@ progressbar pc =
     `<div class = "bar_box">
     <div class = "bar" style = {width:  pc + "%"}/>
     </div>;
+
+-- upto s = st untilI st >= 1 and const 1
+--     where 
+--       st = min 1 s;
+--     end;
+       
+-- ram t = upto (local / t);
+
+-- ram2000 = ram 2000;
+
+-- change v = false untilI (lift change_aux) (futr v) (pres v);
+
+-- change_aux v v0 = 
+--     let state = ! (v == v0);
+--     in state until state and (lift change_aux) (futr v) (pres v);
+
+    
+       
+-- progressbar pc = 
+--     let pc1 = pc until (change pc) and (lift (\pc0 pc1 -> pc0 + (pc1 - pc0) * ram 2000)) (pres pc) (futr pc);
+--     in `<div class = "bar_box">
+--     <div class = "bar" style = {width: pc1 + "%"}>@pc1</div>
+--     </div>;
+
+           
+    
