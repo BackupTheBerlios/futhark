@@ -1,4 +1,6 @@
-(define squish? #t)
+(define yuicompress?
+  (= 256 (shell-command "yuicompress 2")))
+
 (define files 
   (list
    "compat_dom.js"
@@ -7,23 +9,18 @@
    "yera_core.js"
    "yera_dom.js"
    "yera_math.js"
-   "yera_userevent.js"))
+   "yera_userevent.js"
+   ))
 
 
-(define (squish files)
+(define (compress-files files)
   (shell-command "mkdir temp")
-  (for-each (lambda (file)
-              (shell-command
-               (string-append
-                "js_compactor --opt"
-                " --src " file
-                " --dest temp/" file)))
+  (for-each (lambda (file)(shell-command (string-append "yuicompress " file " > temp/" file)))
             files)
   (shell-command
    (string-append
-    "cat" (apply string-append
-                 (map (lambda (c) (string-append " temp/" c)) files))
-    ">rts.js"))
+    "cat" (apply string-append  (map (lambda (c) (string-append " temp/" c)) files))
+    " > rts.js"))
   (shell-command "rm -r temp"))
 
 
@@ -35,8 +32,8 @@
                    (map (lambda (c) (string-append " " c)) files))
                   " > rts.js")))
 
-(if squish?
-    (squish files)
+(if yuicompress?
+    (compress-files files)
     (concat-files files))
 
 
@@ -48,7 +45,7 @@
   (lambda (p)
     (read-subu8vector out-vector 0 size p)))
 
-(call-with-output-file "../yera-rts.scm"
+(call-with-output-file "../rts.scm"
   (lambda (p)
     (pp `(define *-rts-data-* ',out-vector) p)
     (pp `(define *-rts-size-* ,size) p)))

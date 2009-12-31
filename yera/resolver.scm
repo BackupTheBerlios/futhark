@@ -1,19 +1,19 @@
 (##namespace ("yera-resolver#"))
 
 (##include "~~/lib/gambit#.scm")
-(include "ehwas-request#.scm")
-(include "ehwas-response#.scm")
-(include "ehwas-query#.scm")
+(include "../ehwas/request#.scm")
+(include "../ehwas/response#.scm")
+(include "../ehwas/query#.scm")
+(include "../ehwas/rfc3986#.scm")
 
-(include "rfc3986#.scm")
-(include "yera-parser#.scm")
+(include "parser#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (fixnum)
          (block))
 
-(include "yera-rts.scm")
+(include "rts.scm")
 
 (define (fold-left f i l)
   (let fold ((i i) (l l))

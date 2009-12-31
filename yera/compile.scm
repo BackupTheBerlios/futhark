@@ -1,7 +1,7 @@
 (##namespace ("yera-compile#"))
 
 (##include "~~/lib/gambit#.scm")
-(include "yera-mangle#.scm")
+(include "mangle#.scm")
 
 (define-macro (test s)
   (let(

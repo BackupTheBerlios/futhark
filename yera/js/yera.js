@@ -188,7 +188,7 @@ var Yera = function () {
 	Interface.prototype.name = "interface";
 
 	var Struct = function (i, d) {
-	    this.interface = i;
+	    this['interface'] = i;
 	    this.bindings = d;
 	};
 	Struct.prototype.name = "struct";

@@ -2,13 +2,13 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "ansuz-streams#.scm")
-(include "ansuz-language#.scm")
-(include "ansuz-kernel#.scm")
-(include "ansuz-expressions#.scm")
-(include "ansuz-extras#.scm")
+(include "../ansuz/sources#.scm")
+(include "../ansuz/language#.scm")
+(include "../ansuz/kernel#.scm")
+(include "../ansuz/expressions#.scm")
+(include "../ansuz/extras#.scm")
 
-(include "yera-compile#.scm")
+(include "compile#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
@@ -398,7 +398,7 @@
                        (lambda (p)
                          (let(
                               (b1 (run (yera-file (path-directory f1) (bindings-operator-table bs))
-                                       (port->stream p)
+                                       p
                                        (lambda (r)
                                          (raise
                                           (make-parser-exception
@@ -822,7 +822,7 @@
       (return bs)))
  
 (define (yera->sexp s)
-  (run (yera-expression *-operator-table-*) (string->stream s)))
+  (run (yera-expression *-operator-table-*) s))
 
 (define (yera->bytecode pwd in)
   (with-exception-catcher
@@ -835,7 +835,7 @@
                   (number->string (input-port-column in)) ")")))
          (raise ex)))
    (lambda ()
-     (bindings-assignments (run (yera-file pwd *-operator-table-*) (port->stream in))))))
+     (bindings-assignments (run (yera-file pwd *-operator-table-*) in)))))
 
 (define bytecode->js bindings-compile)
 
