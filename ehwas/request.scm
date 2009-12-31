@@ -2,19 +2,19 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "ansuz-language#.scm")
-(include "ansuz-kernel#.scm")
-(include "ansuz-extras#.scm")
-(include "ansuz-streams#.scm")
+(include "../ansuz/language#.scm")
+(include "../ansuz/kernel#.scm")
+(include "../ansuz/extras#.scm")
 (include "rfc822#.scm")
 (include "rfc3986#.scm")
 
-(include "ehwas-request#.scm")
+(include "request#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (block)
-         (not safe))
+         ;;(not safe)
+         )
 
 (define-structure request
   method uri-string uri version
@@ -79,7 +79,7 @@
       (char #\newline)
       (<- hd (rfc822))
       (let(
-           (u (run (rfc3986) (string->stream su))))
+           (u (run (rfc3986) su)))
         (return (make-request
                  m su u v
                  (list->table hd)

@@ -2,18 +2,18 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "ehwas-request#.scm")
-(include "ehwas-response#.scm")
-(include "ehwas-errors#.scm")
-(include "ehwas-resolver#.scm")
+(include "request#.scm")
+(include "response#.scm")
+(include "errors#.scm")
+(include "resolver#.scm")
 
-(include "ansuz-language#.scm")
-(include "ansuz-streams#.scm")
-(include "openssl-ports#.scm")
+(include "../ansuz/language#.scm")
+(include "../ansuz/sources#.scm")
+(include "../encode/openssl-ports#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
-         (not safe)
+         ;;(not safe)
          (block))
 
 (define-structure server
@@ -31,26 +31,24 @@
           (really-make-server h p #f #f r ssl?))))
 
 (define (serve-new-connection port resolver)
-  (call-with-current-continuation
-   (lambda (exit)
-     (with-exception-catcher
-      (lambda (c)
-        ;; INSERT HERE LOG ERROR CODE
-        ;; ignore all errors and close connection
-        ;; (log-error c)
-        (exit 'ok))
-      (lambda ()
-        (let(
-             (req (run (http-request port) (port->stream port))))
-          (let(
-               (res (resolver req)))
-            (close-input-port port)
-            (response-write res port)))))))
-  ;;         (let(
-  ;;              (r (resolver (run (http-request port) (port->stream port)))))
-  ;;           (close-input-port port)
+  (with-exception-catcher
+   (lambda (c)
+     ;; INSERT HERE LOG ERROR CODE
+     ;; ignore all errors and close connection
+     ;; (log-error c)
+     (close-port port))
+   (lambda ()
+     (let(
+          (req (run (http-request port) port)))
+       (let(
+            (res (resolver req)))
+         (close-input-port port)
+         (response-write res port)
+         (close-port port))))))
+;;         (let(
+;;              (r (resolver (run (http-request port) (port->stream port)))))
+;;           (close-input-port port)
   ;;           (response-write r port))))))
-  (close-port port))
 
 (define (open-server-socket host port)
   ;; (declare (fixnum port))
@@ -88,6 +86,8 @@
 ;;     server-address: (or host "localhost")
 ;;     port-number: port)))
 
+(define real-http-port (make-parameter #f))
+
 (define (main-loop s)
   (let main-loop ()
     (let(
@@ -96,8 +96,9 @@
        (make-thread
         (lambda ()
           (let(
-               (pt (if (server-ssl? s) (port->ssl-server-port p) p)))
-            (serve-new-connection pt (server-resolver s))))))
+               (pt (if (server-ssl? s) (port->ssl-server-port p (list char-encoding: 'UTF-8)) p)))
+            (parameterize ((real-http-port p))
+              (serve-new-connection pt (server-resolver s)))))))
       ;; TODO portare server-run prima di servire la richiesta.
       (if (server-run s)
           (main-loop)

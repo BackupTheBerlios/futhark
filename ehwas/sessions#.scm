@@ -5,5 +5,6 @@
   
   session-init
   session-identifier
-  session-table
+  session-set!
+  session-ref
   ))

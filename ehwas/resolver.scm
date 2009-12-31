@@ -2,16 +2,21 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "ehwas-response#.scm")
-(include "ehwas-request#.scm")
+(include "response#.scm")
+(include "request#.scm")
 (include "rfc3986#.scm")
-(include "ehwas-errors#.scm")
-(include "ehwas-template#.scm")
-(include "ehwas-resolver#.scm")
+(include "errors#.scm")
+(include "template#.scm")
+(include "resolver#.scm")
+
+(include "query#.scm")
+(include "cookies#.scm")
+(include "sessions#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (fixnum)
+         ;; (not safe)
          (block))
 
 ;; this parameter defines the size of buffer copying file parts
@@ -86,6 +91,42 @@
 (table-set! types  ".jpe"   "image/jpeg")
 (table-set! types  ".xml"   "application/xml")
 (table-set! types  ".zip"   "application/zip")
+
+(table-set! types  ".py"    "text/x-python")
+(table-set! types  ".pl"    "text/x-perl")
+(table-set! types  ".pm"    "text/x-perl")
+(table-set! types  ".lisp"  "text/x-lisp")
+(table-set! types  ".scm"   "text/x-scheme")
+(table-set! types  ".rb"    "text/x-ruby")
+
+(table-set! types  ".hs"    "text/x-haskell")
+(table-set! types  ".lhs"    "text/x-literate-haskell")
+
+(table-set! types  ".h"     "text/x-chdr")
+(table-set! types  ".c"     "text/x-csrc")
+
+(table-set! types  ".c++"     "text/x-c++src")
+(table-set! types  ".cpp"     "text/x-c++src")
+(table-set! types  ".cxx"     "text/x-c++src")
+(table-set! types  ".cc"      "text/x-c++src")
+
+(table-set! types  ".h++"     "text/x-c++hdr")
+(table-set! types  ".hpp"     "text/x-c++hdr")
+(table-set! types  ".hxx"     "text/x-c++hdr")
+(table-set! types  ".hh"      "text/x-c++hdr")
+
+(table-set! types  ".java"   "text/x-java")
+
+(table-set! types  ".sh"     "text/x-sh")
+
+(table-set! types  ".tcl"    "text/x-tcl")
+(table-set! types  ".tk"     "text/x-tcl")
+
+(table-set! types  ".tex"    "text/x-tex")
+(table-set! types  ".ltx"    "text/x-tex")
+(table-set! types  ".sty"    "text/x-tex")
+(table-set! types  ".cls"    "text/x-tex")
+
 (table-set! types ".ico"    "image/x-icon")
 
 (define (content-type ext)
@@ -110,32 +151,32 @@
           (response-headers response)
           (lambda (p) (write-subu8vector buffer 0 size p))))))
 
-(define cache-timeout (make-parameter (* 30 60)))
+;; (define cache-timeout (make-parameter (* 30 60)))
 
-(define (make-cached-resolver resolve #!optional)
-  (let(
-       (m0 (make-mutex))
-       (cache (make-table weak-values: #t
-                          init: #f)))
-    (lambda (request)
-      (let*(
-            (key (request-uri-string request))
-            (val (table-ref cache key)))
-        (or (and val (thread-send (cdr val) 'touch) (car val))
-            (let*(
-                  (orig (with-buffered-printer (resolve request)))
-                  (val (cons orig #f)))
-              (set-cdr! val
-                        (thread-start!
-                         (make-thread
-                          (lambda ()
-                            (let cont ()
-                              (let(
-                                   (c (thread-receive (cache-timeout) #f)))
-                                val
-                                (if c (cont))))))))
-              (table-set! cache key val)
-              orig))))))
+;; (define (make-cached-resolver resolve #!optional)
+;;   (let(
+;;        (m0 (make-mutex))
+;;        (cache (make-table weak-values: #t
+;;                           init: #f)))
+;;     (lambda (request)
+;;       (let*(
+;;             (key (request-uri-string request))
+;;             (val (table-ref cache key)))
+;;         (or (and val (thread-send (cdr val) 'touch) (car val))
+;;             (let*(
+;;                   (orig (with-buffered-printer (resolve request)))
+;;                   (val (cons orig #f)))
+;;               (set-cdr! val
+;;                         (thread-start!
+;;                          (make-thread
+;;                           (lambda ()
+;;                             (let cont ()
+;;                               (let(
+;;                                    (c (thread-receive (cache-timeout) #f)))
+;;                                 val
+;;                                 (if c (cont))))))))
+;;               (table-set! cache key val)
+;;               orig))))))
             
 ;; (define (make-cached-resolver resolve)
 ;;   (let(
@@ -173,6 +214,21 @@
 ;;          (mutex-unlock! m0)))
 ;;         response))))
 
+            
+(define (make-cached-resolver resolve)
+  (let(
+       (cache (make-table
+               weak-values: #t
+               init: #f)))
+    (lambda (request)
+      (let(
+           (key (request-uri-string request)))
+        (or (table-ref cache key)
+            (let(
+                 (resp (with-buffered-printer (resolve request))))
+              (table-set! cache key resp)
+              resp))))))
+
 (define (make-filesystem-resolver root #!optional (dir? #f))
   (lambda (request)
     (if (null? (uri-path (request-uri request)))
@@ -196,7 +252,8 @@
      v c s
      (header ("Content-type" (content-type (path-extension full)))
              ("Content-length" size)
-             ("Pragma" "no-cache"))
+             ;; ("Pragma" "no-cache")
+             )
      (lambda (out)
        (call-with-input-file full
          (lambda (in)
@@ -295,3 +352,26 @@
   (allow-resolver
    (lambda (req) (not (fn req)))
    resolver))
+
+
+;; utility function for open a request and handle automatically
+;; session/cookies/query stuff
+;; put this in ehwas-resolver#.scm so gsc can inline call
+  (define (with-request req fn)
+  (let*(
+        (path
+         (request-path req))
+        (query
+         (request-query req))
+        (cookies
+         (request-cookies req))
+        (sess-id
+         (and cookies (table-ref cookies "Session-id" #f)))
+        (session
+         (session-init sess-id))
+        (response
+         (fn path query cookies session)))
+    (set-cookie! response
+                 "Session-id"
+                 (session-identifier session) `("path" . "/"))
+    response))

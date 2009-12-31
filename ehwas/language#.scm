@@ -7,6 +7,8 @@
 ;; server-def ::= (define-server <symbol> <defs> ...)
 ;;              | (define <symbol> <server>)
 
+;; handler-def ::= (define-handler name <prog> ...)
+
 ;; server ::= (server <defs> ...)
 ;; defs ::= (host <symbol>)
 ;;        | (port <number>)
@@ -24,6 +26,7 @@
 ;;            | (dynamic <directory>)
 ;;            | (files <directory>)
 ;;            | (paths <assoc> ...)
+;;            | (handler <prog> ...)
 
 ;; <test>   ::= (all)
 ;;            | (none)
@@ -80,7 +83,7 @@
   test
   test->function
   table
-  path
+  paths
   ))
   
     
@@ -92,7 +95,7 @@
         (default '((port 80)
                    (host *)
                    (ssl? #f)
-                   (resolve)))
+                   (resolve not-found-resolver)))
         (getv
          (lambda (n)
            (or (assq n args)
@@ -196,7 +199,7 @@
 (define-macro (table . as)
   `(list->table
     (list ,@(map (lambda (a)
-                   `(cons ',(map symbol->string (car a)) 
+                   `(cons ',(map symbol->string (car a))
                           ,(cadr a)))
                  as))
     init: #f))
@@ -210,7 +213,6 @@
 
 (define-macro (paths . ts)
   `(tables (table ,@ts)))
-                           `
 
-(define-macro (set-resolver! t s v)
-  `(table-set! t (map symbol->string s) v))
+;; (define-macro (set-resolver! t s v)
+;;   `(table-set! t (map symbol->string s) v))

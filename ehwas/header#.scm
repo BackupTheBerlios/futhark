@@ -65,12 +65,6 @@
 (define-macro (header-set! k v)
   `(response-header-set! response ,k ,v))
 
-(define-macro (session-set! k . v)
-  `(table-set! (session-table (session)) ,k ,@v))
-
-(define-macro (session-ref k . v)
-  `(table-ref (session-table (session)) ,k ,@v))
-
 (define-macro (cookie-set! k . v)
   `(begin
      (table-set! (cookies) ,k ,@v)

@@ -2,16 +2,16 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "ansuz-language#.scm")
-(include "ansuz-kernel#.scm")
-(include "ansuz-extras#.scm")
-(include "ansuz-streams#.scm")
+(include "../ansuz/language#.scm")
+(include "../ansuz/kernel#.scm")
+(include "../ansuz/extras#.scm")
+(include "../ansuz/sources#.scm")
 
-(include "ehwas-request#.scm")
-(include "ehwas-errors#.scm")
-(include "ehwas-response#.scm")
+(include "request#.scm")
+(include "errors#.scm")
+(include "response#.scm")
 (include "rfc3986#.scm")
-(include "ehwas-resolver#.scm")
+(include "resolver#.scm")
  
 (declare (standard-bindings)
          (extended-bindings)
@@ -25,24 +25,23 @@
 (define ehwas-pages-includes
   (make-parameter
   (map (lambda (c)
-         (string-append (current-directory) c))
-       `("ehwas-request#.scm"
-         "ehwas-response#.scm"
+         (string-append (path-directory (this-source-file)) c))
+       `("request#.scm"
+         "response#.scm"
          "rfc3986#.scm"
-         "ehwas-query#.scm"
-         "ehwas-cookies#.scm"
-         "ehwas-sessions#.scm"))))
+         "query#.scm"
+         "cookies#.scm"
+         "sessions#.scm"))))
 
 (define path-separator
   (make-parameter
    (let*(
          (cd (current-directory)))
-     (string (string-ref cd (- (string-length cd) 1))))))
-         
+     (string (string-ref cd (- (string-length cd) 1))))))         
 
 (define ehwas-pages-header
   (make-parameter
-   (string-append (current-directory) "ehwas-header#.scm")))
+   (string-append (current-directory) "ehwas/header#.scm")))
 
 (define-parser (more-text) 
   (<> (>> (<> (eos) (word "<?scheme")) (return '()))
@@ -119,7 +118,7 @@
   (call-with-input-file if
     (lambda (ip)
       (call-with-output-file of
-        (run (server-page) (port->stream ip))))))
+        (run (server-page) ip)))))
 
 ;; (define (scheme->application if of)
 ;;   (call-with-output-file of

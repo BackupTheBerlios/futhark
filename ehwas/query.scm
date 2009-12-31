@@ -11,19 +11,20 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "ansuz-language#.scm")
-(include "ansuz-kernel#.scm")
-(include "ansuz-streams#.scm")
-(include "ansuz-extras#.scm")
-(include "rfc822#.scm")
+(include "../ansuz/language#.scm")
+(include "../ansuz/kernel#.scm")
+(include "../ansuz/sources#.scm")
+(include "../ansuz/extras#.scm")
 
+(include "rfc822#.scm")
 (include "rfc3986#.scm")
-(include "ehwas-request#.scm")
+(include "request#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (block)
-         (not safe))
+         ;;(not safe)
+         )
 
 (define ehwas-query-max-file-length (make-parameter (* 50 1000 1000)))
 
@@ -38,6 +39,7 @@
 (define-parser (up-digit)
   (>> (<- d (interval #\a #\f))
       (return (- (char->integer d) 87))))
+
 
 ;; parser that reads a single hex digit A..F
 ;; author: francesco bracchi (frbracch@gmail.com)
@@ -76,7 +78,7 @@
            (char=? c #\%)
            (char=? c #\:)
            ;; (char=? c #\@)
-           (char=? c #\/)
+           ;; (char=? c #\/)
            (char=? c #\;)))))))
 
 ;; parser that reads utf8 chars
@@ -148,10 +150,10 @@
 ;;   (>> (<- c (urlencoded-char))
 ;;       (<- cs (kleene urlencoded-char))
 ;;       (return (list->string (cons c cs)))))
+
 (define-parser (urlencoded-value)
-  (>> (<- c (utf8-char))
-      (<- cs (kleene utf8-char))
-      (return (list->string (cons c cs)))))
+  (>> (<- cs (kleene utf8-char))
+      (return (list->string cs))))
 
 ;; read query and asserts it consumes the whole input stream
 ;; author: francesco bracchi (frbracch@gmail.com)
@@ -245,7 +247,7 @@
         (lambda (p)
           (cons (car p)
                 (run (with-attributes)
-                     (string->stream (cdr p)))))
+                     (->source (cdr p)))))
         h))))
 
 (define-parser (dataencoded-text-value r b)
@@ -275,21 +277,35 @@
       (return (cons c cs))))
 
 (define (url-decode str)
-  (run (urlencoded-query) (string->stream str)))
+  (run (urlencoded-query) (->source str)))
 
-(define (data-decode boundary port)
+(define (data-decode boundary source)
   (list->table
    (run (dataencoded-query boundary)
-        (port->stream port))))
+        source)))
 
 (define (get-boundary v)
   (cdr
    (assoc "boundary"
           (cdr
-           (run (with-attributes) (string->stream v))))))
+           (run (with-attributes) (->source v))))))
 
 (define (rfc822-attributes v)
-  (run (with-attributes) (string->stream v)))
+  (run (with-attributes) (->source v)))
+
+;; this is very dirty about using buffered ports
+(define (string->u8vector s)
+  (call-with-output-u8vector
+   (list char-encoding: 'UTF-8)
+   (lambda (p)
+     (print port: p s))))
+
+(define (read-buffer port)
+  (let*(
+        (ln (input-port-characters-buffered port))
+        (s (make-string ln)))
+    (read-substring s 0 ln port)
+    (string->u8vector s)))
 
 (define (request-parse-query request)
   (let(
@@ -305,12 +321,11 @@
      
      ((and (string=? mtd "POST")
            (string=? (car ats) "multipart/form-data"))
-      (with-exception-catcher
-       (lambda (ex) (pp ex) (raise ex))
-       (lambda () 
-         (data-decode
-          (cdr (assoc "boundary" (cdr ats)))
-          (request-port request)))))
+      (data-decode
+       (cdr (assoc "boundary" (cdr ats)))
+       (source-append
+        (call-with-input-u8vector (read-buffer (request-port request)) ->source)
+        (->source (request-port request)))))
      
      ((and (string=? mtd "POST")
            (string=? (car ats) "application/x-www-form-urlencoded"))
@@ -325,3 +340,24 @@
 
      (else
       (make-table)))))
+
+;; this is the same of request-parse-query
+;; but memoize per request data
+;; so you can call request-query many times
+;; even in case of POST when the data is obtained
+;; parsing request body.
+
+(define request-query
+  (let*(
+        (memo (make-table init: #f))
+        (free (lambda (req) (table-set! memo req)))
+        (id (lambda (q) q)))
+    (lambda (req)
+      (cond
+       ((table-ref memo req) => id)
+       (else
+        (let(
+             (q (request-parse-query req)))
+          (make-will req free)
+          (table-set! memo req q)
+          q))))))

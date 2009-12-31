@@ -1,14 +1,15 @@
 (##namespace ("rfc822#"))
  
 (##include "~~/lib/gambit#.scm")
-(include "ansuz-language#.scm")
-(include "ansuz-kernel#.scm")
-(include "ansuz-extras#.scm")
+(include "../ansuz/language#.scm")
+(include "../ansuz/kernel#.scm")
+(include "../ansuz/extras#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (block)
-         (not safe))
+         ;;(not safe)
+         )
 
 (define-parser (value-list)
   (<> (>> (char #\newline) (<> (>> (<> (char #\space)

@@ -13,8 +13,13 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "ehwas-request#.scm")
- 
+;; (include "request#.scm")
+
+(declare (standard-bindings)
+         (extended-bindings)
+         ;; (not safe)
+         (block))
+
 (define-structure response version code status headers printer)
 
 (define (make-empty-response v c s)
@@ -46,7 +51,6 @@
        (status (response-status r))
        (headers (response-headers r))
        (printer (response-printer r)))
-    
     (print port: p
      (list "HTTP/" (car version) "." (cdr version) " " code " " status "\n"))
     (table-for-each
@@ -54,4 +58,5 @@
        (print port: p (list k ": " v #\newline)))
      headers)
     (newline p)
-    (printer p)))
+    (printer p)
+    ))

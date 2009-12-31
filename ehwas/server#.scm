@@ -3,6 +3,7 @@
   make-server
   start!
   stop!
+  real-http-port
   server-host
   server-port
   server-resolver

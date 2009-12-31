@@ -7,14 +7,14 @@
 (##namespace ("rfc3986#"))
 
 (##include "~~/lib/gambit#.scm")
-(include "ansuz-language#.scm")
-(include "ansuz-kernel#.scm")
-(include "ansuz-extras#.scm")
+(include "../ansuz/language#.scm")
+(include "../ansuz/kernel#.scm")
+(include "../ansuz/extras#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (block)
-         (not safe)
+         ;;(not safe)
          (fixnum))
 
 (define-structure uri scheme authority path query fragment)

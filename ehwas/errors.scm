@@ -2,14 +2,14 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "ehwas-response#.scm")
-(include "ehwas-request#.scm")
-(include "ehwas-template#.scm")
-(include "ehwas-errors#.scm")
+(include "response#.scm")
+(include "request#.scm")
+(include "template#.scm")
+(include "errors#.scm")
  
 (declare (standard-bindings)
          (extended-bindings)
-         (not safe)
+         ;;(not safe)
          (block))
 
 (define *errors* (make-table test: =))

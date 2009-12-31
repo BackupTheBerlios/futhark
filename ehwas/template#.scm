@@ -35,25 +35,54 @@
 ;;              (list "</" (list 'unquote (list 'sxml n)) ">")))))))))
 
 
-;; insert a file as a string
-(define-macro (block fn)
-  (call-with-input-file fn
-    (lambda (p)
-      (read-line p #\nul))))
+;; (define-macro (image fn)
+;;   (let(
+;;        (prt (gensym 'prt)))
+;;     `(lambda (,prt)
+;;        ,(call-with-input-file fn
+;;           (lambda (p)
+;;             (let*(
+;;                   (siz (file-size fn))
+;;                   (buf (make-u8vector siz)))
+;;               (read-subu8vector buf 0 siz p)
+;;               `(write-subu8vector (quote ,buf) 0 ,siz ,prt)))))))
 
-(define-macro (image fn)
+(define-macro (image file)
   (let(
-       (prt (gensym 'prt)))
-    `(lambda (,prt)
-       ,(call-with-input-file fn
-          (lambda (p)
-            (let*(
-                  (siz (file-size fn))
-                  (buf (make-u8vector siz)))
-              (read-subu8vector buf 0 siz p)
-              `(write-subu8vector (quote ,buf) 0 ,siz ,prt)))))))
+       (port (gensym 'port)))
+    `(lambda (,port)
+       (for-each
+        (lambda (b) (write-subu8vector b 0 (u8vector-length b) ,port))
+        (list
+         ,@(call-with-input-file file
+             (lambda (p)
+               (let loop ()
+                 (let*(
+                       (buf (make-u8vector 65536))
+                       (len (read-subu8vector buf 0 65536 p)))
+                  (if (< len 65536)
+                      (list `(##still-copy (quote ,(subu8vector buf 0 len))))
+                      (begin
+                        (cons
+                         `(##still-copy (quote ,buf))
+                         (loop)))))))))))))
 
-(define-macro (xml e)
+(define-macro (block file)
+  `(list
+    ,@(call-with-input-file file
+        (lambda (p)
+          (let loop ()
+            (let*(
+                  (buf (make-string 65536))
+                  (len (read-substring buf 0 65536 p)))
+              (if (< len (string-length buf))
+                  (list `(##still-copy ,(substring buf 0 len)))
+                  (begin
+                    (cons
+                     `(##still-copy ,buf)
+                     (loop))))))))))
+
+(define-macro (xml . e)
   (list
    'quasiquote
    (letrec(
@@ -76,7 +105,7 @@
                   (list
                    "<" xn
                    (map (lambda (a)
-                          (list " " (sxml (car a)) "=\"" (sxml (cadr a)) "\""))
+                          (list " " (sxml (car a)) "=\"" (map sxml (cdr a)) "\""))
                         as)
                    (if #f ;; (and (null? cs) (not (eq? n 'script)))
                        "/>"
@@ -108,6 +137,7 @@
                       (cons (string-append a (car as)) (cdr as)))
                      (else
                       (cons a as))))))))
-                    
-               
-     (simplify (flatten (sxml e))))))
+     
+     (map (lambda (s) (if (string? s) `(,'unquote (##still-copy ,s)) s))
+          (simplify (flatten (map sxml e)))))))
+
