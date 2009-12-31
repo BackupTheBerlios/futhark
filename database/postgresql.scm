@@ -20,7 +20,8 @@
          (extended-bindings)
          (block)
          (mostly-fixnum)
-         (not safe))
+         ;;(not safe)
+         )
 
 ;;; CONSTANTS
 
@@ -37,6 +38,7 @@
   password
   host
   port
+  encoding
   socket)
 
 (define-structure result
@@ -62,13 +64,13 @@
 
 (define-structure backend-exception fields)
 
+
 ;;; POSTGRES TYPES 
 (define (send-int n i p)
   (if (= n 1) (write-u8 i p)
       (begin
         (send-int (- n 1) (quotient i 256) p)
         (write-u8 (remainder i 256) p))))
-
 
 (define (send-netint n i p)
   (if (= n 1) (write-u8 i p)
@@ -77,7 +79,7 @@
         (send-netint (- n 1) (quotient i 256) p))))
 
 (define (send-string s p)
-  (print port: p s)
+  (write-substring s 0 (string-length s) p)
   (print port: p #\nul))
 
 (define (send-bytes buf p)
@@ -133,6 +135,7 @@
        (len (+ 5 (string-length sql))))
     (send-char #\Q p)
     (send-int 4 len p)
+    (force-output p)
     (send-string sql p)
     (force-output p)))
 
@@ -307,7 +310,7 @@
                 (ml (recv-int 4 p))
                 (tl (recv-int 2 p))
                 (t  (take tl recv-tuple-element p)))
-            (recv td (cons (pg-read td t) ts) ns rs)))
+            (recv td (cons (pg-read (connection-encoding con) td t) ts) ns rs)))
          
          ((char=? c #\I)
           (let*(
@@ -360,13 +363,13 @@
 
 (define *-readers-* (make-table init: (lambda (p) (read-line p))))
 
-(define (pg-read td t)
+(define (pg-read enc td t)
   (cond
    ((null? t)
     '())
    
    ((null? (car t))
-    (cons '() (pg-read (cdr td) (cdr t))))
+    (cons '() (pg-read enc (cdr td) (cdr t))))
 
    (else
     (let*(
@@ -376,8 +379,11 @@
               *-readers-*
                (field-descriptor-type d))))
       (cons
-       (call-with-input-u8vector e r)
-       (pg-read (cdr td) (cdr t)))))))
+       (call-with-input-u8vector
+        (list char-encoding: enc
+              init: e)
+        r)
+       (pg-read enc (cdr td) (cdr t)))))))
 
 
 (define (set-readers! ls #!optional (con (current-connection)))
@@ -394,7 +400,7 @@
                   (and (string? id) (string->number id)))
               (cadr c))))))
    (result-tuples
-    (execute "SELECT typname, oid FROM pg_type" con))))
+    (execute "SELECT typname, oid FROM pg_type;" con))))
 
 (define (set-reader! t p c)
   (set-readers! `((,t ,p)) c))
@@ -408,10 +414,13 @@
      (else
       (error "cannot read data")))))
 
+(define (pg-read-number p)
+  (read p))
+
 (define (pg-read-bytea p)
   (let read-bytea ((cs '()))
     (let(
-         (c (read-u8 p)))
+           (c (read-u8 p)))
       (cond
        ((eof-object? c)
         (list->u8vector (reverse cs)))
@@ -419,7 +428,7 @@
         (read-bytea (cons (recv-octet p) cs)))
        (else
         (read-bytea (cons c cs)))))))
-
+  
 (define (recv-octet p)
   (let(
        (a (- (read-u8 p) 48)))
@@ -439,7 +448,7 @@
 
 (define (u8vector->bytea u)
   (call-with-output-string
-   (string)
+   ""
    (lambda (p)
      (let for ((j 0))
        (if (< j (u8vector-length u))
@@ -450,7 +459,7 @@
               ((= c 39) (print port: p "\\\\047"))
               ((= c 92) (print port: p "\\\\134"))
               ((nonprintable? c) (print-escape c p))
-              (else (print (integer->char c) p)))
+              (else (print port: p (integer->char c))))
              (for (+ j 1))))))))
 
 (define (print-escape c #!optional (p (current-output-port)))
@@ -484,27 +493,89 @@
 ;;            (write c sp)
 ;;            (loop))))))))
 
-(define (read-string p)
+;; mother do you think they break my balls?
+;; (define (unescape enc s)
+;;   (let*(
+;;         (wu8 write-u8)
+;;         (write-u8
+;;          (lambda p
+;;            (pp `(write-u8 ,@p))
+;;            (apply wu8 p))))
+;;   (call-with-input-u8vector
+;;    (list
+;;     char-encoding: enc
+;;     init:
+;;     (call-with-output-u8vector
+;;      (u8vector)
+;;      (lambda (p)
+;;        (let(
+;;             (l (string-length s)))
+;;          (let for ((j 0))
+;;            (if (< j l)
+;;                (let(
+;;                     (k (string-ref s j)))
+;;                  (if (char=? k #\\)
+;;                      (if (<= (+ j 1) l)
+;;                          (let(
+;;                               (k1 (string-ref s (+ j 1))))
+;;                            (if (char-numeric? k1)
+;;                                (if (<= (+ j 2) l)
+;;                                    (let(
+;;                                         (k2 (string-ref s (+ j 2))))
+;;                                      (if (char-numeric? k2)
+;;                                          (if (<= (+ j 3) l)
+;;                                              (let(
+;;                                                   (k3 (string-ref s (+ j 3))))
+;;                                                (if (char-numeric? k3)
+;;                                                    (begin
+;;                                                      (pp 'ciao)
+;;                                                      (write-char (integer->char (string->number (string k1 k2 k3) 8)) p)
+;;                                                      (for (+ j 4)))
+;;                                                    (begin
+;;                                                      (write-char (integer->char (string->number (string k1 k2) 8)) p)
+;;                                                      (for (+ j 3)))))
+;;                                              (begin
+;;                                                (write-char (integer->char (string->number (string k1 k2) 8)) p)
+;;                                                (for (+ j 3))))
+;;                                          (begin
+;;                                            (write-char (integer->char (string->number (string k1) 8)) p)
+;;                                            (for (+ j 2)))))
+;;                                    (begin
+;;                                      (write-char (integer->char (string->number (string k1) 8)) p)
+;;                                      (for (+ j 2))))
+;;                                (begin
+;;                                  (write-char k1 p)
+;;                                  (for (+ j 2)))))
+;;                          (error "escape before end of string"))
+;;                      (begin
+;;                        (write-char k p)
+;;                        (for (+ j 1)))))))))))
+;;    (lambda (p)
+;;      (read-line p #\nul))))
+;;   )
+   
+(define (pg-read-string p)
   (let(
-       (s (read-line p #\nul)))
-    (if (eof-object? s) "" s)))
-               
+       (s (read-line p #f)))
+    (cond
+     ((eof-object? s) "")
+     (else s))))
                
 (define (really-init-readers #!optional (con (current-connection)))
   (set-readers!
    `(
      ("bool" ,pg-read-bool)
      ("boolean" ,pg-read-bool)
-     ("char" ,read-string)
-     ("varchar" ,read-string)
-     ("text" ,read-string)
-     ("int2" ,read)
-     ("int4" ,read)
-     ("int8" ,read)
-     ("oid" ,read)
-     ("float4" ,read)
-     ("float8" ,read)
-     ("money" ,read)
+     ("char" ,pg-read-string)
+     ("varchar" ,pg-read-string)
+     ("text" ,pg-read-string)
+     ("int2" ,pg-read-number)
+     ("int4" ,pg-read-number)
+     ("int8" ,pg-read-number)
+     ("oid" ,pg-read-number)
+     ("float4" ,pg-read-number)
+     ("float8" ,pg-read-number)
+     ("money" ,pg-read-number)
      ("bytea" ,pg-read-bytea))
    con)
   (set! *-init-readers-* #t))
@@ -513,23 +584,52 @@
 
 (define current-connection (make-parameter #f))
 
-(define (connect dbn usr #!optional (pwd "") (hst "localhost") (prt 5432))
-  (let*(
-        (con (make-connection
-              dbn
-              usr
-              pwd
-              hst
-              prt
-              (open-tcp-client
-               (list server-address: hst
-                     port-number: prt)))))
+;; (define (connect dbn usr #!optional (pwd "") (hst "localhost") (prt 5432) (enc 'UTF-8))
+;;   (let(
+;;        (con (make-connection
+;;              dbn
+;;              usr
+;;              pwd
+;;              hst
+;;              prt
+;;              enc
+;;              #f)))
+;;               (open-tcp-client
+;;                (list server-address: hst
+;;                      port-number: prt)))))
+;;     (with-exception-catcher
+;;      (lambda (ex)
+;;        (connection-socket-set! con #f)
+;;        (raise ex))
+;;      (lambda () 
+;;        (send-startup-packet con)
+;;        (recv-startup-response con)
+;;        (if (not *-init-readers-*) (really-init-readers con))
+;;        (make-will con (lambda (k)
+;;                         (with-exception-catcher
+;;                          (lambda (ex) 'ignore)
+;;                          (lambda ()(disconnect k)))))
+;;        con)))
+
+(define (connect dbn usr #!optional (pwd "") (hst "localhost") (prt 5432) (enc 'UTF-8))
+  (let(
+       (con (make-connection
+             dbn
+             usr
+             pwd
+             hst
+             prt
+             enc
+             (open-tcp-client
+              (list server-address: hst
+                    port-number: prt)))))
     (send-startup-packet con)
     (recv-startup-response con)
     (if (not *-init-readers-*) (really-init-readers con))
     (make-will con (lambda (k)
-                     (if (connection-socket con)
-                         (disconnect con))))
+                     (with-exception-catcher
+                      (lambda (ex) 'ignore)
+                      (lambda ()(disconnect k)))))
     con))
 
 (define (connect! dbn usr #!optional (pwd "") (hst "localhost") (prt 5432))
@@ -547,18 +647,36 @@
                (list server-address: (connection-host con)
                      port-number: (connection-port con)))))
     (connection-socket-set! con p)
-    (send-startup-packet con)
-    (recv-startup-response con)))
+    (with-exception-catcher
+     (lambda (ex)
+       (connection-socket-set! con #f)
+       (raise ex))
+     (lambda () 
+       (send-startup-packet con)
+       (recv-startup-response con)))))
 
 (define (execute w #!optional (con (current-connection)))
-  (send-query
-   (call-with-output-string
-    ""
-    (lambda (p)
-      (print port: p w)))
-   con)
-  (recv-result con))
-
+  (let(
+       (ww
+        (call-with-output-string
+         ""
+         (lambda (p)
+           (print port: p w)))))
+    (with-exception-catcher
+     (lambda (ex)
+       (let(
+            (soc (connection-socket con)))
+         (if soc
+             (begin
+             (connection-socket-set! con #f)
+             (with-exception-catcher
+              (lambda (ex) 'ignore)
+              (lambda () (close-port soc)))))
+         (raise ex)))
+     (lambda ()
+       (send-query ww con)
+       (recv-result con)))))
+   
 (define (result-alists r)
   (let(
        (n (result-names r)))
@@ -571,43 +689,183 @@
       th
       (lambda () (execute "COMMIT WORK"))))
 
-(define (escape s)
+;; (define (hexenc c)
+;;   (let(
+;;        (n (char->integer c)))
+;;     (cond
+;;      ((< n 128) c)
+;;      ((< n 2028)
+;;       (string-append
+;;        "\\"
+;;       (number->string (bitwise-ior (arithmetic-shift n -6) 192) 8)
+;;       "\\"
+;;       (number->string (bitwise-ior (bitwise-and n 63) 128) 8)))
+;;      (else
+;;       (string-append
+;;        "\\"
+;;        (number->string (bitwise-ior (arithmetic-shift n -12) 224) 8)
+;;        "\\"
+;;        (number->string (bitwise-ior (bitwise-and (arithmetic-shift n -6) 63) 128) 8)
+;;        "\\"
+;;        (number->string (bitwise-ior (bitwise-and n 63) 128) 8))))))
+      
+;; (define (escape s)
+;;   (call-with-output-string
+;;    ""
+;;    (lambda (p)
+;;      (let for ((j 0))
+;;           (if (< j (string-length s))
+;;               (let(
+;;                    (c (string-ref s j)))
+;;                 (cond
+;;                  ((char=? c #\\) (print port: p "\\\\"))
+;;                  ((char=? c #\") (print port: p "\\\""))
+;;                  ((char=? c #\') (print port: p "\\'"))
+;;                  ((char=? c #\backspace) (print  port: p "\\b"))
+;;                  ((char=? c #\newline) (print port: p "\\n"))
+;;                  ((char=? c #\linefeed) (print port: p "\\f"))
+;;                  ((char=? c #\return) (print port: p "\\r"))
+;;                  ((char=? c #\tab) (print port: p "\\t"))
+;;                  ((char<? c #\x80) (print port: p c))
+;;                  (else (print port: p (hexenc c))))
+;;                 (for (+ j 1))))))))
+
+;; (define (escape enc s)
+;;   (call-with-output-string
+;;    ""
+;;    (lambda (out)
+;;      (let*(
+;;            (buf (call-with-output-u8vector
+;;                  (list char-encoding: enc)
+;;                  (lambda (p)
+;;                    (print port: p s))))
+;;            (len (u8vector-length buf)))
+;;        (let for ((j 0))
+;;          (if (>= j len) 'ok
+;;              (let*(
+;;                    (c (u8vector-ref buf j))
+;;                    (k (integer->char c)))
+;;                (cond
+;;                 ((> c 128)
+;;                  (display #\\ out)
+;;                  (display (number->string c 8) out)
+;;                  (for (+ j 1)))
+
+;;                 ((char=? k #\\)
+;;                  (display "\\\\" out)
+;;                  (for (+ j 1)))
+
+;;                 ((char=? k #\')
+;;                  (display "\\'" out)
+;;                  (for (+ j 1)))
+
+;;                 ((char=? k #\")
+;;                  (display "\\\"" out)
+;;                  (for (+ j 1)))
+
+;;                 ((char=? k #\newline)
+;;                  (display "\\n" out)
+;;                  (for (+ j 1)))
+                
+;;                 ((char=? k #\backspace)
+;;                  (display "\\b" out)
+;;                  (for (+ j 1)))
+                
+;;                 ((char=? k #\linefeed)
+;;                  (display "\\f" out)
+;;                  (for (+ j 1)))
+                
+;;                 ((char=? k #\return)
+;;                  (display "\\r" out)
+;;                  (for (+ j 1)))
+                
+;;                 ((char=? k #\tab)
+;;                  (display "\\t" out)
+;;                  (for (+ j 1)))
+                 
+;;                 (else
+;;                  (display k out)
+;;                  (for (+ j 1)))))))))))
+
+
+(define (escape enc s)
   (call-with-output-string
    ""
-   (lambda (p)
-     (let for ((j 0))
-          (if (< j (string-length s))
-              (let(
-                   (c (string-ref s j)))
-                (cond
-                 ((char=? c #\\) (print port: p "\\\\"))
-                 ((char=? c #\") (print port: p "\\\""))
-                 ((char=? c #\') (print port: p "\\'"))
-                 ((char=? c #\backspace) (print  port: p "\\b"))
-                 ((char=? c #\newline) (print port: p "\\n"))
-                 ((char=? c #\linefeed) (print port: p "\\f"))
-                 ((char=? c #\return) (print port: p "\\r"))
-                 ((char=? c #\tab) (print port: p "\\t"))
-                 (else (print port: p c)))
-                (for (+ j 1))))))))
-           
-(define (c f)
+   (lambda (out)
+     (let*(
+           (buf (call-with-output-u8vector
+                 (list char-encoding: enc)
+                 (lambda (p)
+                   (print port: p s))))
+           (len (u8vector-length buf)))
+       (let for ((j 0))
+         (if (>= j len) 'ok
+             (let*(
+                   (c (u8vector-ref buf j))
+                   (k (integer->char c)))
+               (cond
+
+                ((char=? k #\\)
+                 (display "\\\\" out)
+                 (for (+ j 1)))
+
+                ((char=? k #\')
+                 (display "\\'" out)
+                 (for (+ j 1)))
+
+                ((char=? k #\")
+                 (display "\\\"" out)
+                 (for (+ j 1)))
+
+                ((char=? k #\newline)
+                 (display "\\n" out)
+                 (for (+ j 1)))
+                
+                ((char=? k #\backspace)
+                 (display "\\b" out)
+                 (for (+ j 1)))
+                
+                ((char=? k #\linefeed)
+                 (display "\\f" out)
+                 (for (+ j 1)))
+                
+                ((char=? k #\return)
+                 (display "\\r" out)
+                 (for (+ j 1)))
+                
+                ((char=? k #\tab)
+                 (display "\\t" out)
+                 (for (+ j 1)))
+                 
+                ((or (> c 128) (< c 20))
+                 (display "\\" out)
+                 (display (number->string c 8) out)
+                 (for (+ j 1)))
+                
+                (else
+                 (display k out)
+                 (for (+ j 1)))))))))))
+
+
+(define (c f #!optional (con (current-connection)))
   (cond
    ((null? f) "NULL")
    ((eq? f #t) "TRUE")
    ((eq? f #f) "FALSE")
    
    ((or (char? f) (string? f))
-    `("E'" ,(escape f) #\'))
+    `("E'" ,(escape (if con (connection-encoding con) 'UTF-8) f) #\'))
 
    ((number? f)
     f)
    
    ((u8vector? f)
     `("E'" ,(u8vector->bytea f) #\'))
-   
+
    (else
-    `("E'"
-      ,(u8vector->bytea (object->u8vector f))
-      #\'))))
+    f)))
+;;    (else
+;;     `("E'"
+;;       ,(u8vector->bytea (object->u8vector f))
+;;       #\'))))
 
