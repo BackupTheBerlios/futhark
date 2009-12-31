@@ -2,13 +2,14 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "ansuz-language#.scm")
-(include "ansuz-kernel#.scm")
+(include "language#.scm")
+(include "kernel#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (block)
-         (not safe))
+         ;; (not safe)
+         )
 
 (define-parser (kleene p)
   (letrec(

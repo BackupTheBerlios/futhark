@@ -3,103 +3,105 @@
 (##include "~~/lib/gambit#.scm")
 
 (include "reflect#.scm")
-(include "ansuz-streams#.scm")
-(include "ansuz-language#.scm")
+(include "sources#.scm")
+(include "language#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (block)
-         (not safe))
+         ;;(not safe)
+         )
 
 (define-structure parser-exception reason)
 
 (define-parser (char c0)
   (reflect (ts sc fl)
            (let(
-                (c (stream-car ts)))
+                (c (source-car ts)))
              
-           (if (and (char? c) (char=? (stream-car ts) c0))
-               (sc c0 (stream-cdr ts) fl)
+           (if (and (char? c) (char=? (source-car ts) c0))
+               (sc c0 (source-cdr ts) fl)
                (fl (make-parser-exception
                     (string-append
                      "not "
                      (list->string (list c0)))))))))
 
+
 (define-parser (digit)
   (reflect (ts sc fl)
            (let(
-                (c (stream-car ts)))
+                (c (source-car ts)))
              (if (and (char? c) (char-numeric? c))
-                 (sc c (stream-cdr ts) fl)
+                 (sc c (source-cdr ts) fl)
                  (fl (make-parser-exception "not a digit"))))))
 
 (define-parser (upcase)
   (reflect (ts sc fl)
            (let(
-                (c (stream-car ts)))
+                (c (source-car ts)))
              (if (and (char? c) (char>=? c #\A) (char<=? c #\Z))
-                 (sc c (stream-cdr ts) fl)
+                 (sc c (source-cdr ts) fl)
                  (fl (make-parser-exception "not an upcase"))))))
 
 (define-parser (locase)
   (reflect (ts sc fl)
            (let(
-                (c (stream-car ts)))
+                (c (source-car ts)))
              (if (and (char? c) (char>=? c #\a) (char<=? c #\z))
-                 (sc c (stream-cdr ts) fl)
+                 (sc c (source-cdr ts) fl)
                  (fl (make-parser-exception "not a locase"))))))
 
 (define-parser (interval l u)
   (reflect (ts sc fl)
            (let(
-                (c (stream-car ts)))
+                (c (source-car ts)))
              (if (and (char? c) (char>=? c l) (char<=? c u))
-                 (sc c (stream-cdr ts) fl)
+                 (sc c (source-cdr ts) fl)
                  (fl (make-parser-exception "not in interval"))))))
 
 (define-parser (alpha)
   (reflect (ts sc fl)
            (let(
-                (c (stream-car ts)))
+                (c (source-car ts)))
              (if (and (char? c) (char-alphabetic? c))
-                 (sc c (stream-cdr ts) fl)
+                 (sc c (source-cdr ts) fl)
                  (fl (make-parser-exception "not an alpha"))))))
 
 (define-parser (whitespace)
   (reflect (ts sc fl)
            (let(
-                (c (stream-car ts)))
+                (c (source-car ts)))
              (if (and (char? c) (char-whitespace? c))
-                 (sc c (stream-cdr ts) fl)
+                 (sc c (source-cdr ts) fl)
                  (fl (make-parser-exception "not a whitespace"))))))
 
 (define-parser (eos)
   (reflect (ts sc fl)
-           (if (eof-object? (stream-car ts))
-               (sc #!eof (stream-cdr ts) fl)
+           (if (eof-object? (source-car ts))
+               (sc #!eof (source-cdr ts) fl)
                (fl (make-parser-exception "not end")))))
 
 (define-parser (any)
   (reflect (ts sc fl)
            (let(
-                (c (stream-car ts)))
+                (c (source-car ts)))
              (if (char? c)
-                 (sc c (stream-cdr ts) fl)
+                 (sc c (source-cdr ts) fl)
                  (fl (make-parser-exception "not any"))))))
 
 (define-parser (test-token t?)
   (reflect (ts sc fl)
            (let(
-                (c (stream-car ts)))
+                (c (source-car ts)))
              (if (and (char? c) (t? c))
-                 (sc c (stream-cdr ts) fl)
+                 (sc c (source-cdr ts) fl)
                  (fl (make-parser-exception "test failed"))))))
 
 (define-parser (fail r)
   (reflect (ts sc fl)
            (fl (make-parser-exception r))))
 
-(define-parser (token-stream)
+(define-parser (token-source)
   (reflect (ts sc fl) (sc ts ts fl)))
 
 (define-parser (continuation)
