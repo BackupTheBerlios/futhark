@@ -10,7 +10,7 @@
 (define (fsm-states f)
   (let loop (
              (ts (fsm-transition-table f))
-             (r '()))
+             (r (list (fsm-initial-state f))))
     (cond
      ((null? ts) (reverse r))
      ((not (memq (caar ts) r))
@@ -20,19 +20,30 @@
      (else
       (loop (cdr ts) r)))))
 
+(define (fsm-clone fsm)
+  (let*(
+        (table (map (lambda (s) (cons s (gensym 'c))) (fsm-states fsm)))
+        (-> (lambda (s) (cdr (assq s table)))))
+    (make-fsm (-> (fsm-initial-state fsm))
+              (map -> (fsm-final-states fsm))
+              (map (lambda (t) (list (-> (car t)) (cadr t) (-> (caddr t))))
+                   (fsm-transition-table fsm)))))
+
 (define (nfa:// a b)
   (let*(
+        (a (fsm-clone a))
+        (b (fsm-clone b))
         (s0 (gensym 's0))
         (s1 (gensym 's1)))
-    (make-fsm
-     s0 (list s1)
-     (append
-      `((,s0 epsilon ,(fsm-initial-state a))
-        (,s0 epsilon ,(fsm-initial-state b)))
-      (map (lambda (f) (list f 'epsilon s1)) (fsm-final-states a))
-      (map (lambda (f) (list f 'epsilon s1)) (fsm-final-states b))
-      (fsm-transition-table a)
-      (fsm-transition-table b)))))
+     (make-fsm
+      s0 (list s1)
+      (append
+       `((,s0 epsilon ,(fsm-initial-state a))
+         (,s0 epsilon ,(fsm-initial-state b)))
+       (map (lambda (f) (list f 'epsilon s1)) (fsm-final-states a))
+       (map (lambda (f) (list f 'epsilon s1)) (fsm-final-states b))
+       (fsm-transition-table a)
+       (fsm-transition-table b)))))
 
 ;; (define (nfa:++ a b)
 ;;   (let*(
@@ -46,35 +57,39 @@
 ;;              (fsm-transition-table b)))))
 
 (define (nfa:++ a b)
-  (make-fsm
-   (fsm-initial-state a) (fsm-final-states b)
-   (append
-    (map (lambda (f) (list f 'epsilon (fsm-initial-state b)))
-         (fsm-final-states a))
-    (fsm-transition-table a)
-    (fsm-transition-table b))))
+  (let(
+       (a (fsm-clone a))
+       (b (fsm-clone b)))
+    (make-fsm
+     (fsm-initial-state a) (fsm-final-states b)
+     (append
+      (map (lambda (f) (list f 'epsilon (fsm-initial-state b)))
+           (fsm-final-states a))
+      (fsm-transition-table a)
+      (fsm-transition-table b)))))
 
 (define (nfa:kleene a)
   (let(
+       (a (fsm-clone a))
        (s0 (gensym 's0)))
     (make-fsm
-     s0 (list s0)
-     (append
-      `((,s0 epsilon ,(fsm-initial-state a)))
-      (map (lambda (f) (list f 'epsilon s0)) (fsm-final-states a))
-      (fsm-transition-table a)))))
+      s0 (list s0)
+      (append
+       `((,s0 epsilon ,(fsm-initial-state a)))
+       (map (lambda (f) (list f 'epsilon s0)) (fsm-final-states a))
+       (fsm-transition-table a)))))
 
-(define (nfa:kleene+ a)
-  (let(
-       (s0 (gensym 's0))
-       (s1 (gensym 's1)))
-    (make-fsm
-     s0 (list s1)
-     (append
-      `((,s0 epsilon ,(fsm-initial-state a))
-        (,s1 epsilon ,s0))
-      (map (lambda (f) (list f 'epsilon s1)) (fsm-final-states a))
-      (fsm-transition-table a)))))
+;; (define (nfa:1+kleene a)
+;;   (let(
+;;        (s0 (gensym 's0))
+;;        (s1 (gensym 's1)))
+;;     (make-fsm
+;;      s0 (list s1)
+;;      (append
+;;       `((,s0 epsilon ,(fsm-initial-state a))
+;;         (,s1 epsilon ,s0))
+;;       (map (lambda (f) (list f 'epsilon s1)) (fsm-final-states a))
+;;       (fsm-transition-table a)))))
 
 ;; (define nfa:empty
 ;;   (let(
@@ -84,7 +99,7 @@
 ;;      s0 (list s1)
 ;;      `((,s0 epsilon ,s1)))))
 
-(define nfa:empty
+(define (nfa:empty)
   (let(
        (s0 (gensym 's0)))
     (make-fsm s0 (list s0) '())))
@@ -102,6 +117,11 @@
    ((null? l) '())
    ((t? (car l)) (cons (car l) (filter t? (cdr l))))
    (else (filter t? (cdr l)))))
+
+(define (fold f i l)
+  (let fold ((i i) (l l))
+    (if (null? l) i
+        (fold (f i (car l)) (cdr l)))))
 
 ;; (define (step1 a)
 ;;   (make-fsm
@@ -408,7 +428,22 @@
 ;;   (sets->states
 ;;    (with-sets-fna->dfa
 ;;     (states->sets fsm))))
-        
+
+(define (simplify-arcs fsm)
+  (let simplify ((ts (fsm-transition-table fsm))
+                 (rs '()))
+    (if (null? ts)
+        (make-fsm (fsm-initial-state fsm) (fsm-final-states fsm) (reverse rs))
+        (let*(
+              (t (car ts))
+              (ts (cdr ts))
+              (us (filter (lambda (u) (and (eq? (car u) (car t)) (eq? (caddr u) (caddr t)))) ts)))
+          (if (null? us)
+              (simplify (cdr ts) (cons t rs))
+              (simplify (filter (lambda (u) (not (and (eq? (car u) (car t))) (eq? (caddr u) (caddr t)))) ts)
+                        (cons (list (car t) (fold set-union '() (map cadr us)) (caddr t)) rs)))))))
+                        
+       
 (define (fsm-clean fsm)
   (let(
        (fs0 (fsm-final-states fsm))
@@ -463,5 +498,5 @@
   (let*(
         (state0 (nfa->nfa-w/o-e fsm))
         (state1 (nfa-w/o-e->dfa state0)))
-    (fsm-clean state1)))
+    state1))
 

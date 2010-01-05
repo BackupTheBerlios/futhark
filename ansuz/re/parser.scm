@@ -61,14 +61,14 @@
 (define (fsm-interval p lo up)
   (cond
    ((> lo 0)
-    (nfa:++ p (fsm-interval p (- lo 1) up)))
+    (nfa:++ p (fsm-interval p (- lo 1) (if (eq? up 'inf) up (- up 1)))))
    ((eq? up 'inf)
     (nfa:kleene p))
    ((> up 0)
     (nfa:// (nfa:++ p (fsm-interval p 0 (- up 1)))
-            nfa:empty))
-   ((= up 0)
-    nfa:empty)))
+            (nfa:empty)))
+   (else
+    (nfa:empty))))
 
 (define-parser (re-interval p)
   (<>

@@ -93,6 +93,7 @@
   ;; generates code that run the fsm
   (define (fsm->function)
     `(let ()
+       (declare (not inline))
        ,@(map state->binding (fsm-states fsm))
        (,(fsm-initial-state fsm)
         (make-string ,initial-size) ;; buf
@@ -105,8 +106,11 @@
 
   ;; MAIN
   ;; the whole wrapped in a reflect expression
-  `(let ()
-     (declare (not inline))
-     (parser ()
-             (reflect (ts sc fl)
-                      ,(fsm->function)))))
+  `(reflect (ts sc fl)
+            ,(fsm->function)))
+
+              
+                     
+      
+               
+  
