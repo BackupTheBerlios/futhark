@@ -356,22 +356,53 @@
 
 ;; utility function for open a request and handle automatically
 ;; session/cookies/query stuff
-;; put this in ehwas-resolver#.scm so gsc can inline call
-  (define (with-request req fn)
-  (let*(
-        (path
-         (request-path req))
-        (query
-         (request-query req))
-        (cookies
-         (request-cookies req))
-        (sess-id
-         (and cookies (table-ref cookies "Session-id" #f)))
-        (session
-         (session-init sess-id))
-        (response
-         (fn path query cookies session)))
-    (set-cookie! response
-                 "Session-id"
-                 (session-identifier session) `("path" . "/"))
-    response))
+(define with-request
+  (let(
+       (memo (make-table weak-keys: #t)))
+    (lambda (req fn)
+      (let(
+           (response
+            (apply fn
+                   (or (table-ref memo req #f)
+                       (let*(
+                             (path
+                              (request-path req))
+                             (query
+                              (request-query req))
+                             (cookies
+                              (request-cookies req))
+                             (sess-id
+                              (and cookies (table-ref cookies "Session-id" #f)))
+                             (session
+                              (session-init sess-id))
+                             (args (list path query cookies session)))
+                         (table-set! memo req args)
+                         args)))))
+        (if response (set-cookie! response "Session-id" (session-identifier session) `("path" . "/")))
+        response))))
+      
+(define (with-request-keys req fn)
+  (with-request
+   req
+   (lambda (path query cookies session)
+     (fn path: path
+         query: query
+         cookies: cookies
+         session: session))))
+
+(define path (make-parameter))
+(define query (make-parameter))
+(define cookies (make-parameter))
+(define session (make-parameter))
+
+(define (call-with-request req fn)
+  (with-request
+   req
+   (lambda (_path _query _cookies _session)
+     (parameterize
+         ((path _path)
+          (query _query)
+          (cookies _cookies)
+          (session _session))
+       (fn)))))
+                

@@ -8,5 +8,4 @@
   url-decode
   rfc822-attributes
   data-decode
-  request-parse-query
   request-query))

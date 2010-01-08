@@ -49,7 +49,7 @@
 ;;       (else
 ;;        (error "unknown form data encoding"))))))
 
-(define query (wait (request-parse-query request)))
+(define query (wait (request-query request)))
 
 (define session
   (wait

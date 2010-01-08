@@ -9,5 +9,5 @@
   request-header
   request-port
   request-path
-;;  request-query
+  request-uri-query
  ))

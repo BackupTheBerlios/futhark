@@ -23,7 +23,7 @@
 (define (request-path r)
   (uri-path (request-uri r)))
 
-(define (request-query r)
+(define (request-uri-query r)
   (uri-query (request-uri r)))
 
 (define (request-autority r)

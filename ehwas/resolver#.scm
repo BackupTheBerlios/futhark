@@ -12,6 +12,12 @@
   deny-resolver
   buffer-size
   with-request
+  with-request-keys
+  path
+  query
+  cookies
+  session
+  call-with-request
   ))
 
 ;; (define-macro (with-request request fn)

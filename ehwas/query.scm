@@ -307,7 +307,8 @@
     (read-substring s 0 ln port)
     (string->u8vector s)))
 
-(define (request-parse-query request)
+;;(define (request-parse-query request)
+(define (request-query request)
   (let(
        (mtd (request-method request))
        (ats (rfc822-attributes
@@ -341,23 +342,26 @@
      (else
       (make-table)))))
 
-;; this is the same of request-parse-query
-;; but memoize per request data
-;; so you can call request-query many times
-;; even in case of POST when the data is obtained
-;; parsing request body.
+;; ;; this is the same of request-parse-query
+;; ;; but memoize per request data
+;; ;; so you can call request-query many times
+;; ;; even in case of POST when the data is obtained
+;; ;; parsing request body.
 
-(define request-query
-  (let*(
-        (memo (make-table init: #f))
-        (free (lambda (req) (table-set! memo req)))
-        (id (lambda (q) q)))
-    (lambda (req)
-      (cond
-       ((table-ref memo req) => id)
-       (else
-        (let(
-             (q (request-parse-query req)))
-          (make-will req free)
-          (table-set! memo req q)
-          q))))))
+;; (define request-query
+;;   (let*(
+;;         (memo (make-table init: #f))
+;;         (free (lambda (req) (table-set! memo req)))
+;;         (id (lambda (q) q)))
+;;     (lambda (req)
+;;       (cond
+;;        ((table-ref memo req) => id)
+;;        (else
+;;         (let(
+;;              (q (request-parse-query req)))
+;;           (make-will req free)
+;;           (table-set! memo req q)
+;;           q))))))
+
+;; memoization moved away from here to request@(with-request)
+;; this makes more sense
