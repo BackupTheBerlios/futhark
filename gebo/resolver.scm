@@ -287,7 +287,7 @@
 
 (define (gebo-uid req)
   (let(
-       (qry (request-parse-query req))
+       (qry (request-query req))
        (uid (make-uid))
        (mb (make-mailbox)))
     (set-mailbox-uid! uid mb)
@@ -296,7 +296,7 @@
 
 (define (gebo-listen req)
   (let*(
-        (qry (request-parse-query req))
+        (qry (request-query req))
         (mb (uid->mailbox (table-ref qry "uid" ""))))
     (thread-send mb 'free)
     (thread-send mb `(get ,(current-thread)))
