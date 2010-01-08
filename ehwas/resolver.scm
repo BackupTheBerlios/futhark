@@ -12,6 +12,7 @@
 (include "query#.scm")
 (include "cookies#.scm")
 (include "sessions#.scm")
+(include "mime-types#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
@@ -70,67 +71,6 @@
              (string-append
               "/" (car p)
               (conv (cdr p))))))))
-
-(define types (make-table test: string-ci=? init: "text/plain"))
-
-(table-set! types  ".js"    "text/ecmascript")
-(table-set! types  ".css"   "text/css")
-(table-set! types  ".html"  "text/html")
-(table-set! types  ".htm"   "text/html")
-(table-set! types  ".shtml" "text/html")
-(table-set! types  ".html"  "text/html")
-(table-set! types  ".txt"   "text/plain")
-(table-set! types  ".xhtml" "application/xhtml+xml")
-(table-set! types  ".xht"   "application/xhtml+xml")
-(table-set! types  ".svg"   "image/svg+xml")
-(table-set! types  ".svgz"  "image/svg+xml")
-(table-set! types  ".png"   "image/png")
-(table-set! types  ".gif"   "image/gif")
-(table-set! types  ".jpg"   "image/jpeg")
-(table-set! types  ".jpeg"  "image/jpeg")
-(table-set! types  ".jpe"   "image/jpeg")
-(table-set! types  ".xml"   "application/xml")
-(table-set! types  ".zip"   "application/zip")
-
-(table-set! types  ".py"    "text/x-python")
-(table-set! types  ".pl"    "text/x-perl")
-(table-set! types  ".pm"    "text/x-perl")
-(table-set! types  ".lisp"  "text/x-lisp")
-(table-set! types  ".scm"   "text/x-scheme")
-(table-set! types  ".rb"    "text/x-ruby")
-
-(table-set! types  ".hs"    "text/x-haskell")
-(table-set! types  ".lhs"    "text/x-literate-haskell")
-
-(table-set! types  ".h"     "text/x-chdr")
-(table-set! types  ".c"     "text/x-csrc")
-
-(table-set! types  ".c++"     "text/x-c++src")
-(table-set! types  ".cpp"     "text/x-c++src")
-(table-set! types  ".cxx"     "text/x-c++src")
-(table-set! types  ".cc"      "text/x-c++src")
-
-(table-set! types  ".h++"     "text/x-c++hdr")
-(table-set! types  ".hpp"     "text/x-c++hdr")
-(table-set! types  ".hxx"     "text/x-c++hdr")
-(table-set! types  ".hh"      "text/x-c++hdr")
-
-(table-set! types  ".java"   "text/x-java")
-
-(table-set! types  ".sh"     "text/x-sh")
-
-(table-set! types  ".tcl"    "text/x-tcl")
-(table-set! types  ".tk"     "text/x-tcl")
-
-(table-set! types  ".tex"    "text/x-tex")
-(table-set! types  ".ltx"    "text/x-tex")
-(table-set! types  ".sty"    "text/x-tex")
-(table-set! types  ".cls"    "text/x-tex")
-
-(table-set! types ".ico"    "image/x-icon")
-
-(define (content-type ext)
-  (table-ref types ext))
 
 (define (directory? f)
   (eq? (file-type f) 'directory))
@@ -250,7 +190,7 @@
         (size (file-size full)))
     (make-response
      v c s
-     (header ("Content-type" (content-type (path-extension full)))
+     (header ("Content-type" (mime-type (path-extension full)))
              ("Content-length" size)
              ;; ("Pragma" "no-cache")
              )
@@ -390,10 +330,10 @@
          cookies: cookies
          session: session))))
 
-(define path (make-parameter))
-(define query (make-parameter))
-(define cookies (make-parameter))
-(define session (make-parameter))
+(define path (make-parameter #f))
+(define query (make-parameter #f))
+(define cookies (make-parameter #f))
+(define session (make-parameter #f))
 
 (define (call-with-request req fn)
   (with-request
