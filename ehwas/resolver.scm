@@ -345,4 +345,12 @@
           (cookies _cookies)
           (session _session))
        (fn)))))
-                
+
+(define (redirect nt)
+  (lambda (req)
+    (response
+     (request-version req) 302 "Found"
+     (header
+      ("Location" nt)
+      ("Content-type" "text/html"))
+     (text ""))))

@@ -18,6 +18,7 @@
   cookies
   session
   call-with-request
+  redirect
   ))
 
 ;; (define-macro (with-request request fn)
