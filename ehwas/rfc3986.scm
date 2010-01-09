@@ -278,6 +278,9 @@
   (<> (absolute)
       (relative)))
 
+(define (string->uri s)
+  (run (rfc3986) s))
+
 (define (uri->string u)
   (string-append
    (scheme->string (uri-scheme u))
@@ -322,5 +325,41 @@
   (if (null? f) ""
       (string-append "#" f)))
 
+;; escape a string to uri format
+(define (escape s)
+  (let(
+       (len (string-length s)))
+    (call-with-output-string
+     (string)
+     (lambda (port)
+       (let loop ((j 0))
+         (if (>= j len) 'ok
+             (let*(
+                   (ch (string-ref s j))
+                   (int (char->integer ch)))
+               (cond
+                ((or (char<? ch #\space)
+                     (char=? ch #\&)
+                     (char=? ch #\#)
+                     (char=? ch #\?)
+                     (char=? ch #\/)
+                     (char<? ch #\x20))
+                 (print port: port `(#\% ,(number->string int 16))))
+                
+                ((char<? ch #\z)
+                 (print port: port ch))
+                
+                (else
+                 (for-each
+                  (lambda (int)
+                    (print port: port `(#\% ,(number->string int 16))))
+                  (u8vector->list
+                   (call-with-output-u8vector
+                    (u8vector)
+                     (lambda (q)
+                      (display ch q)))))))
+               
+               (loop (+ j 1)))))))))
 
-  
+(define (unescape s)
+  (run (segment) s))

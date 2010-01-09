@@ -1,6 +1,6 @@
 (##namespace
  ("rfc3986#"
-  make-uri
+  uri?
   uri-scheme
   uri-authority
   uri-path
@@ -8,5 +8,7 @@
   uri-fragment
   rfc3986
   path
-  uri->string))
-  
+  uri->string
+  escape
+  unescape
+  ))
