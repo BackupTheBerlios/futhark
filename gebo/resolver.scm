@@ -349,7 +349,7 @@
         (ms (json-read (request-port req) json->pid)))
     (for-each
      (lambda (m)
-       (gebo-send (table-ref m "pid") (table-ref m "message")))
+       (gebo-send (table-ref m "P") (table-ref m "M")))
      ms)
     (json-response req #t)))
 
@@ -410,7 +410,7 @@
 
 (define (javascript-pid? p)
   (and (table? p)
-       (string=? (table-ref p "id-type" "") "javascript")))
+       (string=? (table-ref p "T" "") "j")))
 
 ;; (define (mixed-pid? p)
 ;;   (and (table? p)
@@ -424,10 +424,10 @@
 
 (define (javascript-send to msg)
   (let(
-       (th (uid->mailbox (table-ref to "connection-id"))))
+       (th (uid->mailbox (table-ref to "C"))))
     (scheme-send
      th
-     `(put ,(obj ("pid" to) ("message" msg))))))
+     `(put ,(obj ("P" to) ("M" msg))))))
 
 (define (gebo-send to msg)
   (cond

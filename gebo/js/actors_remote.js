@@ -98,7 +98,7 @@ var ActorsRemote = function () {
 			var ms = stringToJson (con.responseText);
 			for (var j = 0; j < ms.length; j++) {
 			    var m = ms [j];
-			    javascript_send (m.pid, m.message);
+			    javascript_send (m.P, m.M);
 			}
 		    }
 		}
@@ -131,8 +131,8 @@ var ActorsRemote = function () {
 	
 	var remote_send = function (pid, msg) {
 	    mailbox [mailbox.length] = {
-		pid : pid, 
-		message: msg};
+		P : pid, 
+		M: msg};
 	    send_data ();
 	};
 	
