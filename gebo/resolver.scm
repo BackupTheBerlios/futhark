@@ -8,10 +8,9 @@
 (include "../utils/uids#.scm")
 (include "../ehwas/request#.scm")
 (include "../ehwas/response#.scm")
+(include "../ehwas/resolver#.scm")
 
 (include "../ansuz/language#.scm")
-(include "../ehwas/resolver#.scm")
-(include "../ehwas/query#.scm")
 ;; (include "rfc3986#.scm")
 
 (declare (standard-bindings)
@@ -39,6 +38,10 @@
 ;; the same between a two listen call.
 
 (define gebo-wait-timeout (make-parameter 40))
+
+;; this parameter defines the maximum number of objects that an unique
+;; listen request can carry.
+(define gebo-max-objects (make-parameter 50))
 
 
 (define-macro (obj . ps)
@@ -148,11 +151,11 @@
 ;;           (table-set! *-mailbox->uid-* mb))))
 
 (define (silently-die)
-    (sync *-mb-lock-*
-          (let(
-               (mb (current-thread)))
-            (table-set! *-uid->mailbox-* (table-ref *-mailbox->uid-* mb))
-            (table-set! *-mailbox->uid-* mb))))
+  (sync *-mb-lock-*
+        (let(
+             (mb (current-thread)))
+          (table-set! *-uid->mailbox-* (table-ref *-mailbox->uid-* mb))
+          (table-set! *-mailbox->uid-* mb))))
 
  
 (define (pawned-empty-mailbox)
@@ -218,6 +221,14 @@
       (thread-send pid '())
       (empty-mailbox)))))
 
+(define (take n l0)
+  (let take ((i 0) (l l0) (r '()))
+    (cond
+     ((null? l) (values l0 '()))
+     ((>= i n) (values (reverse r) l))
+     (else
+      (take (+ i 1) (cdr l) (cons (car l) r))))))
+
 (define (full-mailbox f r)
   (let(
        (c (thread-receive)))
@@ -229,12 +240,17 @@
         (full-mailbox f r1)))
 
      ((and (pair? c) (eq? (car c) 'get))
-      (thread-send (cadr c) f)
-      (empty-mailbox))
+      (receive (h t) (take (gebo-max-objects) f)
+        (thread-send (cadr c) h)
+        (if (null? t)
+            (empty-mailbox)
+            (full-mailbox t r))))
+            
+      ;; (thread-send (cadr c) f)
+      ;; (empty-mailbox))
 
      ((eq? c 'pawn)
       (pawned-full-mailbox f r)))))
-
 
 (define (make-mailbox)
   (thread-start!
@@ -243,8 +259,10 @@
 
 (define (pid->json o)
   (if (scheme-pid? o)
-      (obj ("id-type" "scheme")
-           ("process-id" (pid->uid o)))
+      (obj ("T" "s")
+           ("P" (pid->uid o)))
+      ;; (obj ("id-type" "scheme")
+      ;;      ("process-id" (pid->uid o)))
       o))
 ;;   (or (and (scheme-pid? o)
 ;;            (obj ("id-type" "scheme")
@@ -253,8 +271,10 @@
 
 (define (json->pid o)
   (if (and (table? o)
-           (string=? "scheme" (table-ref o "id-type" "")))
-      (uid->pid (table-ref o "process-id" ""))
+           (string=? "s" (table-ref o "T" "")))
+           ;; (string=? "scheme" (table-ref o "id-type" "")))
+      (uid->pid (table-ref o "P" ""))
+      ;;(uid->pid (table-ref o "process-id" ""))
       o))
 ;;   (or (and (table? o)
 ;;            (string=? (table-ref o "id-type" "") "scheme")
@@ -287,7 +307,6 @@
 
 (define (gebo-uid req)
   (let(
-       (qry (request-query req))
        (uid (make-uid))
        (mb (make-mailbox)))
     (set-mailbox-uid! uid mb)
@@ -295,17 +314,19 @@
     (json-response req uid)))
 
 (define (gebo-listen req)
-  (let*(
-        (qry (request-query req))
-        (mb (uid->mailbox (table-ref qry "uid" ""))))
-    (thread-send mb 'free)
-    (thread-send mb `(get ,(current-thread)))
-    (let*(
-          (q (thread-receive))
-          (res (json-response req q)))
-      (thread-send mb 'pawn)
-      res)))
-  
+  (call-with-request
+   req
+   (lambda ()
+     (let(
+          (mb (uid->mailbox (table-ref (query) "uid" ""))))
+       (thread-send mb 'free)
+       (thread-send mb `(get ,(current-thread)))
+       (let*(
+             (q (thread-receive))
+             (res (json-response req q)))
+         (thread-send mb 'pawn)
+         res)))))
+   
 ;; (define (gebo-notify req)
 ;;   (let*(
 ;;         (qry (request-parse-query req))
@@ -325,11 +346,6 @@
 
 (define (gebo-notify req)
   (let*(
-;;         (qry (request-parse-query req))
-;;         (ms (call-with-input-string
-;;              (table-ref qry "data" "")
-;;              (lambda (p)
-;;                (json-read p json->pid)))))
         (ms (json-read (request-port req) json->pid)))
     (for-each
      (lambda (m)

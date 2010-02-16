@@ -164,10 +164,15 @@ var ActorsRemote = function () {
 	
 	var actorToAddr = function (msg) {
 	    if (msg instanceof Actor) {
-		return {"id-type": "javascript",
-			"connection-id" : connection_id,
-			"process-id" : actorToId(msg)
-		       };
+		return {
+		    T: 'j',
+		    C: connection_id, 
+		    P: actorToId(msg)
+		};
+		// return {"id-type": "javascript",
+		// 	"connection-id" : connection_id,
+		// 	"process-id" : actorToId(msg)
+		//        };
 	    } else if (msg instanceof Array) {
 		var r = [];
 		for (var j = 0; j < msg.length; j++)
@@ -183,8 +188,10 @@ var ActorsRemote = function () {
 	};
 
 	var addrToActor = function (msg) {
-	    if (msg instanceof Object && msg["id-type"] == 'javascript')
-		return idToActor (msg ["process-id"]);
+	    if (msg instanceof Object && msg.T == 'j')
+		return idToActor (msg.P);
+	    // if (msg instanceof Object && msg["id-type"] == 'javascript')
+	    // 	return idToActor (msg ["process-id"]);
 	    if (msg instanceof Array) {
 		var r = [];
 		for (var j = 0; j < msg.length; j++)
