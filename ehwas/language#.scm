@@ -71,6 +71,7 @@
   allow
   deny
   extensions
+  method
   all
   none
   static
@@ -86,26 +87,41 @@
   paths
   ))
   
-    
-(define-macro (define-server name . args)
-  `(define ,name (server ,@args)))
 
-(define-macro (server . args)
-  (let*(
-        (default '((port 80)
-                   (host *)
-                   (ssl? #f)
-                   (resolve not-found-resolver)))
-        (getv
-         (lambda (n)
-           (or (assq n args)
-               (assq n default)
-               (raise `(syntax-error ,n not a valid keyword))))))
-    `(make-server
-      ,(symbol->string (cadr (getv 'host)))
-      ,(cadr (getv 'port))
-      (make-guarded-resolver (orelse ,@(cdr (getv 'resolve)) not-found-resolver))
-      ,(cadr (getv 'ssl?)))))
+;; (define-macro (define-server name . args)
+;;   `(define ,name (server ,@args)))
+
+;; (define-macro (server . args)
+;;   (let*(
+;;         (default '((port 80)
+;;                    (host *)
+;;                    (ssl? #f)
+;;                    (resolve not-found-resolver)))
+;;         (getv
+;;          (lambda (n)
+;;            (or (assq n args)
+;;                (assq n default)
+;;                (raise `(syntax-error ,n not a valid keyword))))))
+;;     `(make-server
+;;       ,(symbol->string (cadr (getv 'host)))
+;;       ,(cadr (getv 'port))
+;;       (make-guarded-resolver (orelse ,@(cdr (getv 'resolve)) not-found-resolver))
+;;       ,(cadr (getv 'ssl?)))))
+
+(define-macro (define-server name #!key (port 80) (host '*) (secure #f) (resolver 'not-found-resolver))
+  `(define ,name (server
+                  port: ,port
+                  host: ,host
+                  secure: ,secure
+                  resolver: ,resolver)))
+
+(define-macro (server #!key (port 80) (host '*) (secure #f) (resolver 'not-found-resolver))
+  `(make-server
+    ,(symbol->string host)
+    ,port
+    (orelse ,resolver not-found-resolver)
+    ,secure))
+
 
 (define-macro (orelse r . rs)
   (if (null? rs) r
@@ -164,6 +180,13 @@
                (else (,last (cdr ,p))))))
         ',(map (lambda (e) (symbol->string e)) es)))))
 
+(define-macro (method m)
+  (let(
+       (r (gensym 'r))
+       (s (symbol->string m)))
+    `(lambda (,r)
+       (string=? (request-method ,r) ,s))))
+
 (define-macro (all)
   (let(
        (_ (gensym '_)))
@@ -176,7 +199,7 @@
 
 (define-macro (static s #!optional (dir? #f))
   `(make-filesystem-resolver
-    ,(symbol->string s)
+    ,(if (symbol? s) (symbol->string s) s)
     ,dir?))
 
 (define-macro (dynamic s)
@@ -213,6 +236,7 @@
 
 (define-macro (paths . ts)
   `(tables (table ,@ts)))
+
 
 ;; (define-macro (set-resolver! t s v)
 ;;   `(table-set! t (map symbol->string s) v))
