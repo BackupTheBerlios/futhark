@@ -24,8 +24,7 @@
 (define buffer-size (make-parameter 4096))
 
 (define not-found-resolver
-  (lambda (request)
-    (http-error 404 request)))
+  (lambda (request) #f))
 
 (define (identity x) x)
 
@@ -52,15 +51,15 @@
   (call-with-output-string
    ""
    (lambda (p)
-     (##continuation-capture
+     (continuation-capture
       (lambda (k)
-        (##display-exception-in-context e k p))))))
+        (display-exception-in-context e k p))))))
 
-(define (make-guarded-resolver res)
-  (lambda (r)
-    (with-exception-catcher
-     (lambda (c) (http-error 500 r (exception->string c)))
-     (lambda () (res r)))))
+;; (define (make-guarded-resolver res)
+;;   (lambda (r)
+;;     (with-exception-catcher
+;;      (lambda (c) (http-error 500 r (exception->string c)))
+;;      (lambda () (res r)))))
 
 (define (path->localstring p)
   (if (null? p) ""
@@ -82,7 +81,7 @@
   (and response
        (let*(
              (printer (response-printer response))
-             (buffer (call-with-output-u8vector (u8vector) printer))
+             (buffer (##still-copy (call-with-output-u8vector (u8vector) printer)))
              (size (u8vector-length buffer)))
          (make-response
           (response-version response)
@@ -172,38 +171,46 @@
 (define (make-filesystem-resolver root #!optional (dir? #f))
   (lambda (request)
     (if (null? (uri-path (request-uri request)))
-        (make-directory-response (request-version request) 200 "OK" "" (string-append root "/"))
+        (and dir? (make-directory-response (request-version request) 200 "OK" "" (string-append root "/")))
         (let*(
               (local (path->localstring (uri-path (request-uri request))))
               (full (string-append root "/" local)))
           (cond
            ((not (file-exists? full)) #f)
-           ((regular? full) (make-file-response (request-version request) 200 "OK" full))
+           ((regular? full) (make-file-response request full))
            ((and (directory? full) dir?) (make-directory-response (request-version request) 200 "OK" local full))
            (else #f))))))
 
 
-(define (make-file-response v c s full)
+(define (make-file-response request full)
   (let*(
         (buf-size (buffer-size))
         (buffer (make-u8vector buf-size))
-        (size (file-size full)))
-    (make-response
-     v c s
-     (header ("Content-type" (mime-type (path-extension full)))
-             ("Content-length" size)
-             ;; ("Pragma" "no-cache")
-             )
-     (lambda (out)
-       (call-with-input-file full
-         (lambda (in)
-           (let loop ((j 0))
-             (if (< j size)
-                 (let(
-                      (delta (read-subu8vector buffer 0 buf-size in)))
-                   (write-subu8vector buffer 0 delta out)
-                   (loop (+ j delta)))))))))))
-       
+        (size (file-size full))
+        (etag (number->string (time->seconds (file-last-modification-time full)) 16))
+        (if-none-match (table-ref (request-header request) "If-None-Match" "")))
+    (if (string=? etag if-none-match)
+        (make-response
+         (request-version request) 304 "Not Modified"
+         (header)
+         (text ""))
+        (make-response
+         (request-version request) 200 "OK"
+         (header ("Content-type" (mime-type full))
+                 ("Content-length" size)
+                 ("Etag" etag)
+                 ;; ("Pragma" "no-cache")
+                 )
+         (lambda (out)
+           (call-with-input-file full
+             (lambda (in)
+               (let loop ((j 0))
+                 (if (< j size)
+                     (let(
+                          (delta (read-subu8vector buffer 0 buf-size in)))
+                       (write-subu8vector buffer 0 delta out)
+                       (loop (+ j delta))))))))))))
+  
 (define (make-directory-response v c s local full)
   (let(
        (str (call-with-output-string
@@ -285,8 +292,8 @@
                       (request-port request)))))))
 
 (define (allow-resolver fn resolver)
-  (lambda (request)
-    (and (fn request) (resolver request))))
+  (lambda (req)
+    (and (fn req) (resolver req))))
 
 (define (deny-resolver fn resolver)
   (allow-resolver
@@ -300,25 +307,25 @@
   (let(
        (memo (make-table weak-keys: #t)))
     (lambda (req fn)
-      (let(
-           (response
-            (apply fn
-                   (or (table-ref memo req #f)
-                       (let*(
-                             (path
-                              (request-path req))
-                             (query
-                              (request-query req))
-                             (cookies
-                              (request-cookies req))
-                             (sess-id
-                              (and cookies (table-ref cookies "Session-id" #f)))
-                             (session
-                              (session-init sess-id))
-                             (args (list path query cookies session)))
-                         (table-set! memo req args)
-                         args)))))
-        (if response (set-cookie! response "Session-id" (session-identifier session) `("path" . "/")))
+      (let*(
+            (args
+             (or (table-ref memo req #f)
+                 (let*(
+                       (path
+                        (request-path req))
+                       (query
+                        (request-query req))
+                       (cookies
+                        (request-cookies req))
+                       (sess-id
+                        (and cookies (table-ref cookies "Session-id" #f)))
+                       (session
+                        (session-init sess-id))
+                       (args (list path query cookies session)))
+                   (table-set! memo req args)
+                   args)))
+            (response (apply fn args)))
+        (if (response? response) (set-cookie! response "Session-id" (session-identifier (list-ref args 3)) `("path" . "/")))
         response))))
       
 (define (with-request-keys req fn)
