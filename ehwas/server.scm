@@ -30,6 +30,24 @@
         (lambda (h p r #!optional (ssl? #f))
           (really-make-server h p #f #f r ssl?))))
 
+(define (not-found-page req)
+  (response
+   (request-version req) 404 "File Not Found"
+   (header
+    ("Pragma" "no-cache")
+    ("Cache-Control" "no-cache, must revalidate")
+    ("Expires:" "-1")
+    ("Content-type" "text/html"))
+   (text
+    "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
+    "<html><head><title>Error 404</title></head><body><h1>File Not Found</h1></body></html>")))
+
+(define (add-server-header! res)
+  (table-set! (response-header res) "Server"
+              (string-append
+               "futhark/ehwas 1.0.0"
+               (table-ref (response-header res) ""))))
+
 (define (serve-new-connection port resolver)
   (with-exception-catcher
    (lambda (c)
@@ -41,7 +59,8 @@
      (let(
           (req (run (http-request port) port)))
        (let(
-            (res (resolver req)))
+            (res (or (resolver req) (not-found-page req))))
+         (add-server-header! req)
          (close-input-port port)
          (response-write res port)
          (close-port port))))))
@@ -123,4 +142,5 @@
 (define (stop! s)
   (server-run-set! s #f)
   (touch-server s))
+
 
