@@ -1,8 +1,8 @@
 (##namespace ("ehwas-w3c-logger#"))
 
 (##include "~~/lib/gambit#.scm")
+(include "~~/site-scheme/termite/termite#.scm")
 
-(include "~~/lib/termite/termite#.scm")
 (include "server#.scm")
 (include "request#.scm")
 (include "response#.scm")

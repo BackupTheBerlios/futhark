@@ -43,10 +43,12 @@
     "<html><head><title>Error 404</title></head><body><h1>File Not Found</h1></body></html>")))
 
 (define (add-server-header! res)
-  (table-set! (response-header res) "Server"
-              (string-append
-               "futhark/ehwas 1.0.0"
-               (table-ref (response-header res) ""))))
+  (let(
+       (hs (response-headers res)))
+    (table-set! hs "Server"
+                (string-append
+                 "futhark/ehwas 1.0.0"
+                 (table-ref hs "Server" "")))))
 
 (define (serve-new-connection port resolver)
   (with-exception-catcher
@@ -60,7 +62,7 @@
           (req (run (http-request port) port)))
        (let(
             (res (or (resolver req) (not-found-page req))))
-         (add-server-header! req)
+         (add-server-header! res)
          (close-input-port port)
          (response-write res port)
          (close-port port))))))

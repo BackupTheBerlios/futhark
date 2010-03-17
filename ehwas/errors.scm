@@ -12,101 +12,122 @@
          ;;(not safe)
          (block))
 
-(define *errors* (make-table test: =))
+(define *default-errors* (make-table test: =))
 
-(define-macro (define-default-error code status)
+(define-macro (define-default-for-error code status)
   (let(
+       (body (gensym 'body))
        (req (gensym 'req)))
-    `(define-error ,code
-       (lambda (,req)
+    `(define-default-error-handler ,code
+       (lambda (,req #!key exception continuation)
          (response
           (request-version ,req) ,code ,status
           (header
+           ("Pragma" "no-cache")
+           ("Cache-Control" "no-cache, must revalidate")
+           ("Expires:" "-1")
            ("Content-type" "text/html"))
           (text
-           "<?xml version = \"1.0\" ?>\n"
-           (xml
+           (html
+            "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
             (html
-             (@ (xmlns "http://www.w3.org/1999/xhtml"))
              (head (title "Webserver error " ,code))
              (body
               (center
                (h1 "Web server error " ,code)
                (h4 ,status)))))))))))
 
-(define-default-error 400 "Bad Request")
-(define-default-error 401 "Unauthorized Access")
-(define-default-error 403 "Forbidden Access")
-(define-default-error 404 "File Not Found")
-  
-;; (define-error 400
-;;   (lambda (req)
-;;     (response
-;;      (request-version req) 400 "Bad Request"
-;;      (header ("Content-type" "application/xhtml+xml")
-;;              ("Pragma" "no-cache"))
-;;      (text
-;;       "<?xml version = \"1.0\" ?>\n"
-;;       (xml
-;;        (html
-;;         (@ (xmlns "http://www.w3.org/1999/xhtml"))
-;;         (head (title "Web server error 400"))
-;;         (body
-;;          (center
-;;           (h1 "Web server error 400")))))))))
+(define-default-for-error 400 "Bad Request")
+(define-default-for-error 401 "Unauthorized Access")
+(define-default-for-error 403 "Forbidden Access")
+(define-default-for-error 404 "File Not Found")
+             
+(define (string->html s)
+  (let(
+       (len (string-length s)))
+    (call-with-output-string
+     (string)
+     (lambda (port)
+       (let loop ((j 0))
+         (if (>= j len) 'ok
+             (let(
+                  (ch (string-ref s j)))
+               (cond
+                ((char=? ch #\>) (display "&gt;" port))
+                ((char=? ch #\<) (display "&lt;" port))
+                ((char=? ch #\&) (display "&amp;" port))
+                ((char=? ch #\newline) (display "<br>" port))
+                (else
+                 (display ch port)))
+               (loop (+ j 1)))))))))
 
-;; (define-error 401
-;;   (lambda (req)
-;;     (response
-;;      (request-version req) 401 "Unauthorized Access"
-;;      (header ("Content-type" "application/xhtml+xml")
-;;              ("Pragma" "no-cache"))
-;;      (text
-;;       "<?xml version = \"1.0\" ?>\n"
-;;       "<html xmlns = \"http://www.w3.org/1999/xhtml\">\n"
-;;       "<head><title>Webserver Error 401</title></head>\n"
-;;       "<body><center><h1>Webserver Error 401</h1></center></body></html>\n"))))
-    
-;; (define-error 403
-;;   (lambda (req)
-;;     (response
-;;      (request-version req) 403 "Forbidden Access"
-;;      (header ("Content-type" "application/xhtml+xml")
-;;              ("Pragma" "no-cache"))
-;;      (text
-;;       "<?xml version = \"1.0\" ?>\n"
-;;       "<html xmlns = \"http://www.w3.org/1999/xhtml\">\n"
-;;       "<head><title>Webserver Error 403</title></head>\n"
-;;       "<body><center><h1>Webserver Error 403</h1></center></body></html>\n"))))
+(define (exception->string e k)
+  (call-with-output-string
+   ""
+   (lambda (p) (display-exception-in-context e k p))))
 
-;; (define-error 404
-;;   (lambda (req)
-;;     (response
-;;      (request-version req) 404 "File Not Found"
-;;      (header ("Content-type" "application/xhtml+xml")
-;;              ("Pragma" "no-cache"))
-;;      (text
-;;       "<?xml version = \"1.0\" ?>\n"
-;;       "<html xmlns = \"http://www.w3.org/1999/xhtml\">\n"
-;;       "<head><title>Webserver Error 404</title></head>\n"
-;;       "<body><center><h1>File not found</h1>"
-;;       "<h2>" (request-uri-string req) "</h2>"
-;;       "</center></body></html>\n"))))
+(define (backtrace->string k)
+  (call-with-output-string
+   ""
+   (lambda (p)
+     (display-continuation-backtrace k p))))
 
-(define-error 500
-  (lambda (req c)
+(define-default-error-handler 500
+  (lambda (req #!key exception continuation)
     (response
      (request-version req) 500 "Internal Server Error"
      (header
-      ("Content-type" "application/xhtml+xml"))
+      ("Pragma" "no-cache")
+      ("Cache-Control" "no-cache, must revalidate")
+      ("Expires:" "-1")
+      ("Content-type" "text/html"))
      (text
-      "<?xml version = \"1.0\" ?>\n"
-      (xml
+      (html
+       "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
        (html
-        (@ (xmlns "http://www.w3.org/1999/xhtml"))
         (head
          (title "Webserver Error " 500))
         (body
          (center
           (h1 "Webserver error " 500)
-          (h2 "<![CDATA[",c "]]>")))))))))
+          (h2 (@ (style "align:left")) 
+              ,(call-with-output-string
+                ""
+                (lambda (p)
+                  (print
+                   port: p
+                   (html
+                    (h4 ,(string->html (exception->string exception continuation)))
+                    (h5 "In:")
+                    (textarea (@ (cols "80") (rows "10") (readonly "true")) ,(backtrace->string continuation)))))))))))))))
+
+
+(define (default-handler req code #!key (exception #f) (continuation #f))
+  ((table-ref *default-errors* code) req exception: exception continuation: continuation))
+
+;; (define (with-error-handler handler res)
+;;   (lambda (req)
+;;     (or (with-exception-catcher
+;;          (lambda (e)
+;;            (continuation-capture
+;;             (lambda (k)
+;;               (handler req 500 exception: e continuation: k))))
+;;          (lambda () (res req)))
+;;         (handler req 404))))
+
+(define (with-error-handler handler res)
+  (lambda (req)
+    (let(
+         (kont #f))
+      (or (with-exception-catcher
+           (lambda (e)
+             (handler req 500 exception: e continuation: kont))
+           (lambda ()
+             (continuation-capture
+              (lambda (k)
+                (set! kont k)
+                (res req)))))
+          (handler req 404)))))
+
+(define (with-default-error-handler res)
+  (with-error-handler default-handler res))

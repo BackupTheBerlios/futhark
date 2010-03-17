@@ -1,5 +1,6 @@
 (##namespace
  ("rfc3986#"
+  make-uri
   uri?
   uri-scheme
   uri-authority

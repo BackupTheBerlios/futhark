@@ -9,6 +9,7 @@
   nfa://
   nfa:++
   nfa:kleene
+  nfa:repeat
   nfa:empty
   nfa:set
   nfa->nfa-w/o-e

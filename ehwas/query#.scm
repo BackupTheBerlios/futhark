@@ -3,6 +3,7 @@
 
 (##namespace
  ("ehwas-query#"
+  ehwas-query-max-file-length
   urlencoded-query
   dataencoded-query
   url-decode

@@ -2,7 +2,7 @@
  ("ehwas-resolver#"
   not-found-resolver
   orelse-resolver
-  make-guarded-resolver
+  ;; make-guarded-resolver
   make-cached-resolver
   make-filesystem-resolver
   make-table-resolver

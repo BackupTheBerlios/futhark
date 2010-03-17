@@ -36,8 +36,4 @@
    (with-prefix (registry) (tables registry))))
 
 (pp 'starting)
-(start! server0)
-
-                        
-                        
-                        
+(start! server0)                

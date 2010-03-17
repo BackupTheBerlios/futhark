@@ -1,4 +1,4 @@
-(##namespace ("sxml#" xml block image))
+(##namespace ("sxml#" sgml html xml block image))
 
 ;; (define-macro (sxml e)
 ;;   (cond
@@ -82,11 +82,11 @@
                      `(##still-copy ,buf)
                      (loop))))))))))
 
-(define-macro (xml . e)
+(define-macro (sgml #!key (empty '()) . e)
   (list
    'quasiquote
    (letrec(
-           (sxml
+           (ssgml
             (lambda (e)
               (cond
                ((symbol? e) (symbol->string e))
@@ -98,18 +98,18 @@
                (else
                 (let*(
                       (n (car e))
-                      (xn (sxml n))
+                      (xn (ssgml n))
                       (atr? (and (pair? (cdr e)) (pair? (cadr e)) (eq? (caadr e) '@)))
                       (as (if atr? (cdadr e) '()))
                       (cs (if atr? (cddr e) (cdr e))))
                   (list
                    "<" xn
                    (map (lambda (a)
-                          (list " " (sxml (car a)) "=\"" (map sxml (cdr a)) "\""))
+                          (list " " (ssgml (car a)) "=\"" (map ssgml (cdr a)) "\""))
                         as)
-                   (if #f ;; (and (null? cs) (not (eq? n 'script)))
+                   (if (member n empty)
                        "/>"
-                       (list ">" (map sxml cs) "</" xn ">"))))))))
+                       (list ">" (map ssgml cs) "</" xn ">"))))))))
            (flatten
             (lambda (ss)
               (cond
@@ -139,5 +139,11 @@
                       (cons a as))))))))
      
      (map (lambda (s) (if (string? s) `(,'unquote (##still-copy ,s)) s))
-          (simplify (flatten (map sxml e)))))))
+          (simplify (flatten (map ssgml e)))))))
 
+
+(define-macro (html . e)
+  `(sgml empty: (area base basefont br col frame hr img input isindex link meta param) ,@e))
+
+(define-macro (xml . e)
+  `(sgml empty: () ,@e))

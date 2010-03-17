@@ -79,6 +79,18 @@
        (map (lambda (f) (list f 'epsilon s0)) (fsm-final-states a))
        (fsm-transition-table a)))))
 
+(define (nfa:repeat p lo up)
+  (cond
+   ((> lo 0)
+    (nfa:++ p (nfa:repeat p (- lo 1) (if (eq? up 'inf) up (- up 1)))))
+   ((eq? up 'inf)
+    (nfa:kleene p))
+   ((> up 0)
+    (nfa:// (nfa:++ p (nfa:repeat p 0 (- up 1)))
+            (nfa:empty)))
+   (else
+    (nfa:empty))))
+
 ;; (define (nfa:1+kleene a)
 ;;   (let(
 ;;        (s0 (gensym 's0))

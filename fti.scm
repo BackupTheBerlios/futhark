@@ -8,6 +8,7 @@
 
 (include "ehwas/rfc3986.scm")
 (include "ehwas/rfc822.scm")
+(include "ehwas/mime-types.scm")
 (include "ehwas/request.scm")	
 (include "ehwas/response.scm")
 (include "ehwas/errors.scm")				

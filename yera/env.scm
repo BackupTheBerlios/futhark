@@ -25,7 +25,7 @@
                     (path-strip-extension yf)
                     ".js")))
   
-  (pp `(,yf -> ,jf))
+  ;; (pp `(,yf -> ,jf))
   (call-with-input-file yf
     (lambda (in)
       (call-with-output-file jf

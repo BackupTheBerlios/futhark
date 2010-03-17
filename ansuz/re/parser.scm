@@ -53,40 +53,36 @@
                 (c (source-car ts)))
              (cond
               ((eof-object? c) (fl "end of object reached"))
+              ((char=? c #\\)
+               (let*(
+                     (ts (source-cdr ts))
+                     (c1 (source-car ts)))
+                 (if (eof-object? c)
+                     (fl "end of object reached")
+                     (sc c1 (source-cdr ts) fl))))
+                     
               ((memq c *-not-valid-*)
                (fl "not a valid char"))
               (else
                (sc c (source-cdr ts) fl))))))
-
-(define (fsm-interval p lo up)
-  (cond
-   ((> lo 0)
-    (nfa:++ p (fsm-interval p (- lo 1) (if (eq? up 'inf) up (- up 1)))))
-   ((eq? up 'inf)
-    (nfa:kleene p))
-   ((> up 0)
-    (nfa:// (nfa:++ p (fsm-interval p 0 (- up 1)))
-            (nfa:empty)))
-   (else
-    (nfa:empty))))
 
 (define-parser (re-interval p)
   (<>
    (>> (<- s0 (decimal))
        (COMMA)
        (<- s1 (decimal))
-       (return (fsm-interval p s0 s1)))
+       (return (nfa:repeat p s0 s1)))
    
    (>> (<- s0 (decimal))
        (COMMA)
-       (return (fsm-interval p s0 'inf)))
+       (return (nfa:repeat p s0 'inf)))
    
    (>> (<- s0 (decimal))
-       (return (fsm-interval p s0 s0)))
+       (return (nfa:repeat p s0 s0)))
    
    (>> (COMMA)
        (<- s1 (decimal))
-       (return (fsm-interval p 0 s1)))))     
+       (return (nfa:repeat p 0 s1)))))     
 
 (define-parser (re-times p)
   (>> (CURLED_OPEN)
@@ -148,9 +144,9 @@
 
 (define-parser (re-factor)
   (>> (<- s0 (re-atom))
-      (<> (>> (QUEST) (return (fsm-interval s0 0 1)))
-          (>> (PLUS) (return (fsm-interval s0  1 'inf)))
-          (>> (MULT) (return (fsm-interval s0 0 'inf)))
+      (<> (>> (QUEST) (return (nfa:repeat s0 0 1)))
+          (>> (PLUS) (return (nfa:repeat s0  1 'inf)))
+          (>> (MULT) (return (nfa:repeat s0 0 'inf)))
           (re-times s0)
           (return s0))))
 

@@ -62,7 +62,9 @@
   modifier
   binary?)
 
-(define-structure backend-exception fields)
+(define-type backend-exception
+  fields
+  (query init: #f))
 
 
 ;;; POSTGRES TYPES 
@@ -572,6 +574,7 @@
      ("int2" ,pg-read-number)
      ("int4" ,pg-read-number)
      ("int8" ,pg-read-number)
+     ("numeric" ,pg-read-number)
      ("oid" ,pg-read-number)
      ("float4" ,pg-read-number)
      ("float8" ,pg-read-number)
@@ -672,6 +675,7 @@
              (with-exception-catcher
               (lambda (ex) 'ignore)
               (lambda () (close-port soc)))))
+         (if (backend-exception? ex) (backend-exception-query-set! ex ww))
          (raise ex)))
      (lambda ()
        (send-query ww con)

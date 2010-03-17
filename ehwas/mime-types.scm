@@ -6,7 +6,7 @@
 (define (mime-type-set! ext mime)
   (table-set! types ext mime))
 
-(mime-type-set!  ".js"    "text/ecmascript")
+(mime-type-set!  ".js"    "text/javascript")
 (mime-type-set!  ".css"   "text/css")
 (mime-type-set!  ".html"  "text/html")
 (mime-type-set!  ".htm"   "text/html")
@@ -62,6 +62,6 @@
 
 (mime-type-set! ".ico"    "image/x-icon")
 
-(define (mime-type ext)
-  (table-ref types ext))
+(define (mime-type fn)
+  (table-ref types (path-extension fn)))
 

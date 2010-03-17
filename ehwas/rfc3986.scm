@@ -226,7 +226,10 @@
 (define-parser (query)
   (<>  (>> (char #\?)
            (<- cs  (kleene (parser ()
-                           (<> (pchar)
+                           (<> (unreserved)
+                               (sub-delims)
+                               (char #\%)
+                               (char #\@)
                                (char #\/)
                                (char #\?)))))
            (return (list->string cs)))
@@ -318,7 +321,7 @@
                         (path->string p)))))
 
 (define (query->string q)
-  (if (null? q) ""
+  (if (= 0 (string-length q)) "" 
       (string-append "?" q)))
 
 (define (fragment->string f)
@@ -343,6 +346,8 @@
                      (char=? ch #\#)
                      (char=? ch #\?)
                      (char=? ch #\/)
+                     (char=? ch #\:)
+                     (char=? ch #\.)
                      (char<? ch #\x20))
                  (print port: port `(#\% ,(number->string int 16))))
                 
