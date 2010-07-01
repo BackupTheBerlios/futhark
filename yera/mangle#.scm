@@ -1,2 +1,0 @@
-(##namespace ("yera-mangle#"
-              mangle))
