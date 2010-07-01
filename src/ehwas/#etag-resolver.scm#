@@ -1,0 +1,25 @@
+(##namespace ("ehwas-etag-resolver#"))
+
+
+(##include "~~/lib/gambit#.scm")
+(##include "~~/lib/digest#.scm")
+
+(include "response#.scm")
+(include "request#.scm")
+
+
+(declare (standard-bindings)
+         (extended-bindings)
+         (fixnum)
+         ;; (not safe)
+         (block))
+
+
+(define (with-etag resolver)
+  (lambda (req)
+    (let(
+         (res (resolver (req)))
+         (digest
+          (digest-string
+           (call-with-ouput-string "" (response-printer res))))
+

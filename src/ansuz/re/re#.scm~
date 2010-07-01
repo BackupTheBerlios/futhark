@@ -1,0 +1,35 @@
+(##namespace ("ansuz-re-re#" macro-time-load regexp define-regexp))
+
+(##include "~~/lib/gambit#.scm")
+(include "parser#.scm")
+(include "cgen#.scm")
+(include "../kernel#.scm")
+(include "../sources#.scm")
+(include "../language#.scm")
+
+(define (macro-time-load fn)
+   (load (string-append (path-directory (this-source-file)) fn))
+  `(quote (loaded ,fn)))
+
+(pp 0)
+(macro-time-load "../sources.scm")
+(macro-time-load "../kernel.scm")
+(macro-time-load "../extras.scm")
+(macro-time-load "../expressions.scm")
+(macro-time-load "sets")
+(macro-time-load "fsm")
+(macro-time-load "parser")
+(macro-time-load "cgen")
+(pp 1)
+(define-macro (regexp e)
+  (with-exception-catcher
+   (lambda (ex)
+     (if (error-exception? ex)
+         (begin
+           `(eval (fsm->code (run (re) ,e))))
+         (raise ex)))
+   (lambda ()
+     (fsm->code (run (re) e)))))
+
+(define-macro (define-regexp name val)
+  `(define ,name (regexp ,val)))

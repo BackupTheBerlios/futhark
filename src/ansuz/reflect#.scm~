@@ -1,0 +1,26 @@
+(define-syntax with-state
+  (syntax-rules ()
+    ((_ (?x ...) (?f ?a ...))
+     (?f ?a ... ?x ...))))
+
+(define-syntax reflect
+  (syntax-rules ()
+    ((_ (?v ...) ?b ?x ...)
+     (let(
+          (?v ?x) ...)
+       ?b))))
+
+(define-syntax reify
+  (syntax-rules ()
+    ((_ (?v ?m) ?n ?x ...)
+     (let-syntax (
+                  (?v
+                   (syntax-rules ()
+                     ((?v . ??x)
+                      (with-state ??x ?m)))))
+       (with-state (?x ...) ?n)))))
+
+(define-syntax run-monad
+  (syntax-rules ()
+    ((_ ?p ?x ...)
+     (with-state (?x ...) ?p))))
