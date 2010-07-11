@@ -344,14 +344,21 @@
 ;;    (lambda (p)
 ;;      (display s p))))
 
+;; (define (gebo-notify req)
+;;   (let*(
+;;         (ms (json-read (request-port req) json->pid)))
+;;     (for-each
+;;      (lambda (m)
+;;        (gebo-send (table-ref m "P") (table-ref m "M")))
+;;      ms)
+;;     (json-response req #t)))
+
 (define (gebo-notify req)
-  (let*(
-        (ms (json-read (request-port req) json->pid)))
-    (for-each
-     (lambda (m)
-       (gebo-send (table-ref m "P") (table-ref m "M")))
-     ms)
-    (json-response req #t)))
+  (for-each
+   (lambda (m)
+     (gebo-send (table-ref m "P") (table-ref m "M")))
+   (json-read (request-port req) json->pid))
+  (json-response req #t))
 
 (include "rts.scm")
 
@@ -424,7 +431,7 @@
 
 (define (javascript-send to msg)
   (let(
-       (th (uid->mailbox (table-ref to "C"))))
+       (th (uid->mailbox (table-ref to "C" #f))))
     (scheme-send
      th
      `(put ,(obj ("P" to) ("M" msg))))))
