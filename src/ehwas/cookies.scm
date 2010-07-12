@@ -57,18 +57,18 @@
 
 (define (make-token-parser valid?)
   (parser ()
-          (reflect (ts sc fl)
-                   (let loop ((ts ts) (st (make-string 4096)) (wpos 0) (lim 4095))
+          (reflect (head tail row column psoition datum sc fl) ;;(ts sc fl)
+                   (let loop ((datum datum) (st (make-string 4096)) (wpos 0) (lim 4095))
                      (let(
-                          (c (source-car ts)))
+                          (c (head datum)))
                        (if (valid? c)
                            (begin
                              (string-set! st wpos c)
-                             (loop (source-cdr ts)
+                             (loop (tail datum)
                                    (if (= lim wpos) (string-append st (make-string (+ 1 lim))) st)
                                    (+ 1 wpos)
                                    (if (= lim wpos) (+ 1 (* 2 lim)) lim)))
-                           (sc (substring st 0 wpos) ts fl)))))))
+                           (sc (substring st 0 wpos) datum fl)))))))
 
 (define key
   (make-token-parser
@@ -86,14 +86,14 @@
               (char=? c #\nul))))))
 
 (define-parser (spaces)
-  (reflect (ts sc fl)
-           (let loop ((ts ts))
+  (reflect (head tail row column psoition datum sc fl)
+           (let loop ((datum datum))
              (let(
-                  (c (source-car ts)))
+                  (c (head datum)))
                (if (and (char? c) (char-whitespace? c))
-                   (loop (source-cdr ts))
-                   (sc '() ts fl))))))
-                   
+                   (loop (tail datum))
+                   (sc '() datum fl))))))
+
 (define-parser (cookie)
   (>> (<- c (cookie-value))
       (<- cs (kleene

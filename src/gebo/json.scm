@@ -5,6 +5,7 @@
 (include "../ansuz/language#.scm")
 (include "../ansuz/kernel#.scm")
 (include "../ansuz/extras#.scm")
+(include "../ansuz/sources#.scm")
 
 (declare
  (standard-bindings)
