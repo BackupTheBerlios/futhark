@@ -33,38 +33,38 @@
   (char->integer #\0))
 
 (define-parser (decimal)
-  (reflect (ts sc fl)
+  (reflect (head tail row col pos datum sc fl)
            (let(
-                (c (source-car ts)))
+                (c (head datum)))
              (if (char-numeric? c)
-                 (let loop ((ts (source-cdr ts))
+                 (let loop ((datum (tail datum))
                             (k (- (char->integer c) (i0))))
                    (let(
-                        (c (source-car ts)))
+                        (c (head datum)))
                      (if (char-numeric? c)
-                         (loop (source-cdr ts)
+                         (loop (tail datum)
                                (+ (* k 10) (- (char->integer c) (i0))))
-                         (sc k ts fl))))
+                         (sc k datum fl))))
                  (fl "not a decimal")))))
  
 (define-parser (valid-char)
-  (reflect (ts sc fl)
+  (reflect (head tail row col pos datum sc fl)
            (let(
-                (c (source-car ts)))
+                (c (head datum)))
              (cond
               ((eof-object? c) (fl "end of object reached"))
               ((char=? c #\\)
                (let*(
-                     (ts (source-cdr ts))
-                     (c1 (source-car ts)))
+                     (datum (tail datum))
+                     (c1 (head datum)))
                  (if (eof-object? c)
                      (fl "end of object reached")
-                     (sc c1 (source-cdr ts) fl))))
+                     (sc c1 (tail datum) fl))))
                      
               ((memq c *-not-valid-*)
                (fl "not a valid char"))
               (else
-               (sc c (source-cdr ts) fl))))))
+               (sc c (tail datum) fl))))))
 
 (define-parser (re-interval p)
   (<>

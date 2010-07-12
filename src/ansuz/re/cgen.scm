@@ -54,7 +54,7 @@
         (,(caddr t)
          (if (= lim wpos) (string-append buf (make-string (+ 1 lim))) buf) ;; buf
          (if (= lim wpos) (+ 1 (* 2 lim)) lim)                             ;; lim
-         (source-cdr wts)                                                  ;; wts
+         (tail wts)                                                  ;; wts
          (+ 1 wpos)                                                        ;; wpos
          ,(if term? 'wts 'fts)                                             ;; fts
          ,(if term? 'wpos 'fpos)))))                                       ;; fpos
@@ -83,7 +83,7 @@
   (define (state->function s)
     `(lambda (buf lim wts wpos fts fpos)
        (let(
-            (c (source-car wts)))
+            (c (head wts)))
          ,(state->condition s))))
       
   ;; generates a binding between the state and the function 
@@ -98,7 +98,7 @@
        (,(fsm-initial-state fsm)
         (make-string ,initial-size) ;; buf
         ,(- initial-size 1)         ;; lim
-        ts                          ;; wts
+        datum                          ;; wts
         0                           ;; wpos
         #f                          ;; fts
         #f)))                       ;; fpos
@@ -106,7 +106,7 @@
 
   ;; MAIN
   ;; the whole wrapped in a reflect expression
-  `(reflect (ts sc fl)
+  `(reflect (head tail row col pos datum sc fl)
             ,(fsm->function)))
 
               

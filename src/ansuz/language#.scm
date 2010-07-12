@@ -11,36 +11,85 @@
 (include "orelse#.scm")
 (include "sources#.scm")
 
+ 
 ;; (define-macro (run p s #!optional (fl0 'raise))
 ;;   (let(
-;;        (vv (gensym 'vv))
+;;        (v (gensym 'v))
 ;;        (ts (gensym 'ts))
 ;;        (fl (gensym 'fl)))
-;;     `(with-state (,s (lambda (,vv ,ts ,fl) ,vv) ,fl0)
-;;                 ,p)))
+;;     `(run-monad ,p (->source ,s) (lambda (,v ,ts ,fl) ,v) ,fl0)))
 
 ;; (define-macro (run-ndet p s)
 ;;   (let(
-;;        (vv (gensym 'vv))
+;;        (v (gensym 'v))
 ;;        (ts (gensym 'ts))
-;;        (fl (gensym 'fl)))
-;;     `(with-state (,s (lambda (,vv ,ts ,fl) (values ,vv ,fl)) raise)
-;;                 ,p)))
+;;        (fl (gensym 'fl))
+;;        (r (gensym 'r)))
+;;     `(run-monad ,p (->source ,s) (lambda (,v ,ts ,fl) (cons ,v (delay (,fl 'ndet)))) (lambda (,r) '()))))
 
-(define-macro (run p s #!optional (fl0 'raise))
+;; (define (run p src #!optional (fail raise))
+;;   (let*(
+;;         (head (char-source-head src))
+;;         (tail (char-source-tail src))
+;;         (row (char-source-row src))
+;;         (col (char-source-column src))
+;;         (pos (char-source-position src))
+;;         (datum (char-source-datum src)))
+;;     (run-monad (p) head tail row col pos datum (lambda (v datum fl) v) fail)))
+
+;; (define (run-ndet p src)
+;;   (let*(
+;;         (head (char-source-head src))
+;;         (tail (char-source-tail src))
+;;         (row (char-source-row src))
+;;         (col (char-source-column src))
+;;         (pos (char-source-position src))
+;;         (datum (char-source-datum src)))
+;;     (run-monad (p) head tail row col pos datum (lambda (v datum fl) (cons v (delay (fl 'nder)))) (lambda (r) '()))))
+
+(define-macro (run p s #!optional (fail 'raise))
   (let(
+       (src (gensym 'src))
+       (head (gensym 'head))
+       (tail (gensym 'tail))
+       (row (gensym 'row))
+       (col (gensym 'col))
+       (pos (gensym 'pos))
+       (datum (gensym 'datum))
        (v (gensym 'v))
-       (ts (gensym 'ts))
        (fl (gensym 'fl)))
-    `(run-monad ,p (->source ,s) (lambda (,v ,ts ,fl) ,v) ,fl0)))
+    `(let*(
+           (,src (->source ,s))
+           (,head (char-source-head ,src))
+           (,tail (char-source-tail ,src))
+           (,row (char-source-row ,src))
+           (,col (char-source-column ,src))
+           (,pos (char-source-position ,src))
+           (,datum (char-source-datum ,src)))
+       (run-monad ,p ,head ,tail ,row ,col ,pos ,datum (lambda (,v ,datum ,fl) ,v) ,fail))))
 
-(define-macro (run-ndet p s)
+(define (run-ndet p s)
   (let(
+       (src (gensym 'src))
+       (head (gensym 'head))
+       (tail (gensym 'tail))
+       (row (gensym 'row))
+       (col (gensym 'col))
+       (pos (gensym 'pos))
+       (datum (gensym 'datum))
        (v (gensym 'v))
-       (ts (gensym 'ts))
        (fl (gensym 'fl))
        (r (gensym 'r)))
-    `(run-monad ,p (->source ,s) (lambda (,v ,ts ,fl) (cons ,v (delay (,fl 'ndet)))) (lambda (,r) '()))))
+    `(let*(
+           (,src ,s)
+           (head (char-source-head ,src))
+           (tail (char-source-tail ,src))
+           (row (char-source-row ,src))
+           (col (char-source-column ,src))
+           (pos (char-source-position ,src))
+           (datum (char-source-datum ,src)))
+       (run-monad ,p ,head ,tail ,row ,col ,pos ,datum (lambda (,v ,datum ,fl) (cons ,v (delay (,fl 'ndet)))) (lambda (,r) '())))))
+
                
 (define-macro (parser-eval e . x)
   (cond

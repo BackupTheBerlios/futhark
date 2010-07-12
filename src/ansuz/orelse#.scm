@@ -32,15 +32,24 @@
   (let(
        (mm (gensym 'm))
        (nn (gensym 'n))
-       (ts (gensym 'ts))
+       
+       (head (gensym 'head))
+       (tail (gensym 'tail))
+       (row (gensym 'row))
+       (column (gensym 'column))
+       (position (gensym 'position))
+       (datum (gensym 'datum))
+       
        (sc (gensym 'sc))
        (fl (gensym 'fl))
        (ignore (gensym '*ignore*)))
   `(with-state ,x
                (reify (mm ,n)
                       (reify (nn ,n)
-                             (reflect (,ts ,sc ,fl)
-                                      (,mm ,ts ,sc (lambda (,ignore) (,n ,ts ,sc ,fl)))))))))
+                             (reflect (,head ,tail ,row ,column ,position ,datum ,sc ,fl)
+                                      (,mm ,head ,tail ,row ,column ,position ,datum
+                                           (lambda (,ignore) (,n ,head ,tail ,row ,column ,position ,datum ,sc ,fl)))))))))
+
 ;; (define-syntax orelse*
 ;;   (syntax-rules ()
 ;;     ((_ ?m ?n ?x ...)
@@ -56,20 +65,29 @@
   (let(
        (mm (gensym 'm))
        (nn (gensym 'n))
-       (ts (gensym 'ts))
+       
+       (head (gensym 'head))
+       (tail (gensym 'tail))
+       (row (gensym 'row))
+       (column (gensym 'column))
+       (position (gensym 'position))
+       (datum (gensym 'datum))
+       
        (sc (gensym 'sc))
        (fl (gensym 'fl))
        (v (gensym 'v))
-       (ts1 (gensym 'ts1))
+       
+       (datum1 (gensym 'datum1))
+       
        (fl1 (gensym 'fl1))
        (ignore (gensym 'ignore)))
     `(with-state ,x
                  (reify (,mm ,m)
                         (reify (,nn ,n)
-                               (reflect (,ts ,sc ,fl)
-                                        (,mm ,ts
-                                             (lambda (,v ,ts1 ,fl1) (,sc ,v ,ts1 ,fl))
-                                             (lambda (,ignore) (,nn ,ts ,sc ,fl)))))))))
+                               (reflect (,head ,tail ,row ,column ,position ,datum ,sc ,fl)
+                                        (,mm ,head ,tail ,row ,column ,position ,datum
+                                             (lambda (,v ,datum1 ,fl1) (,sc ,v ,datum1 ,fl))
+                                             (lambda (,ignore) (,nn ,head ,tail ,row ,column, position ,datum ,sc ,fl)))))))))
 
 ;; (define-syntax orelse
 ;;   (syntax-rules ()

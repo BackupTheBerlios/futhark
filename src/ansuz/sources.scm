@@ -1,90 +1,104 @@
 (##namespace ("ansuz-sources#"))
 (##include "~~/lib/gambit#.scm")
-(include "sources#.scm")
+(include "sources.new#.scm")
 
-(define-type source
-  predicate: kource?
-  (kar unprintable: read-only:)
-  (kdr unprintable: read-only:)
-  (kow unprintable: read-only:)
-  (kol unprintable: read-only:)
-  (kos unprintable: read-only:))
+(declare (standard-bindings)
+         (extended-bindings)
+         (safe)
+         (fixnum)
+         (block))
 
-(define (function->source fn)
-  (let port->source ((row 0) (col 0) (pos 0))
-    (delay
-      (let(
-           (c (fn)))
-        (make-source
-         c
-         (cond
-          ((not (char? c))
-           (port->source row col pos))
-          
-          ((char=? c #\newline) 
-           (port->source (+ 1 row) 0 (+ 1 pos)))
-          
-          (else
-           (port->source row (+ col 1) (+ 1 pos))))
-         row col pos)))))
+(define-type char-source
+  (head unprintable: read-only:)
+  (tail unprintable: read-only:)
+  (row unprintable: read-only:)
+  (column unprintable: read-only:)
+  (position unprintable: read-only:)
+  (datum unprintable: read-only:))
 
-(define (port->source p)
-  (function->source (lambda () (read-char p))))
+(define-type string-datum string position)
 
-(define (string->source s #!optional (c 0))
-  (function->source
-   (lambda ()
-     (if (< c (string-length s))
-         (let(
-              (r (string-ref s c)))
-           (set! c (+ c 1))
-           r)
-         #!eof))))
+(define (string->source str #!optional (p0 0))
+  (let(
+       (head 
+        (lambda (src)
+          (let( 
+               (str (string-datum-string  src))
+               (pos (string-datum-position src)))
+            (or (and (< pos (string-length str)) (string-ref str pos))
+                #!eof))))
+       (tail
+        (lambda (src)
+          (make-string-datum (string-datum-string src)
+                             (fx+ 1 (string-datum-position src)))))
+       (row
+        (lambda (src)
+          (error "row not implemented for strings")))
 
-(define (vector->source s)
-  (let ((c 0))
-    (function->source
-     (lambda ()
-       (if (< c (vector-length s))
-           (let(
-                (r (vector-ref s c)))
-             (set! c (+ c 1))
-             r)
-           #!eof)))))
+       (column
+        (lambda (src)
+          (error "column not implemented for strings")))
 
-(define (list->source s)
-  (let ((s s))
-    (function->source
-     (lambda ()
-       (if (null? s)
-           #!eof
-           (let(
-                (r (car s)))
-             (set! s (cdr s))
-             r))))))
+       (position
+        (lambda (src)
+          (string-datum-position src)))
+       (datum
+        (make-string-datum str p0)))
+    (make-char-source head tail row column position datum)))
 
-(define (source-append s0 s1)
-  (function->source
-   (lambda ()
-     (if (eof-object? (source-car s0))
-         (let(
-              (r (source-car s1)))
-           (set! s1 (source-cdr s1))
-           r)
-         (let(
-              (r (source-car s0)))
-           (set! s0 (source-cdr s0))
-           r)))))
+
+(define-type port-datum port char position row column)
+
+;; (define (port->source port)
+;;   (let(
+;;        (tail
+;;         (lambda (datum)
+;;           (let*(
+;;                 (port (port-datum-port datum))
+;;                 (char (read-char port))
+;;                 (position (fx+ (port-datum-position datum) 1))
+;;                 (newline? (and (char? char) (char=? char #\newline)))
+;;                 (row (if newline? (fx+ (port-datum-row datum) 1) (port-datum-row datum)))
+;;                 (column (if newline? 0 (fx+ 1 (port-datum-column datum)))))
+;;             (display char)
+;;             (make-port-datum port char position row column)))))
+;;     (make-char-source port-datum-char
+;;                       tail
+;;                       port-datum-row
+;;                       port-datum-column
+;;                       port-datum-position
+;;                       (make-port-datum port (read-char port) 0 1 0))))
+
+(define (port->source port)
+  (let*(
+        (head (lambda (datum)
+                (or (port-datum-char datum)
+                    (let(
+                         (ch (read-char (port-datum-port datum))))
+                      (port-datum-char-set! datum ch)
+                      ch))))
+        (tail
+         (lambda (datum)
+           (let*(
+                 (char (head datum))
+                 (position (fx+ (port-datum-position datum) 1))
+                 (newline? (and (char? char) (char=? char #\newline)))
+                 (row (if newline? (fx+ (port-datum-row datum) 1) (port-datum-row datum)))
+                 (column (if newline? 0 (fx+ 1 (port-datum-column datum)))))
+             (make-port-datum port #f position row column)))))
+    (make-char-source head
+                      tail
+                      port-datum-row
+                      port-datum-column
+                      port-datum-position
+                      (make-port-datum port (read-char port) 0 1 0))))
 
 (define (->source s)
   (cond
    ((string? s) (string->source s))
    ((input-port? s) (port->source s))
-   ((vector? s) (vector->source s))
-   ((list? s) (list->source s))
-   ((procedure? s) (function->source s))
-   ((source? s) s)
-   (else (error "unknown type ->source" s))))
-
-  
-   
+   ((vector? s) (string->source (list->string (vector->list s))))
+   ((list? s) (string->source (list->string s)))
+   ((char-source? s) s)
+   (else
+    (error "unknown type ->source" s))))
