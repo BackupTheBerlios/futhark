@@ -1,5 +1,5 @@
 var YeraCore = function () {
-    with (Yera) with (Actors) with (ActorsTest) {    
+    with (Yera){    
 	var copy = function (o) {
 	    var c = {};
 	    for (var f in o) 

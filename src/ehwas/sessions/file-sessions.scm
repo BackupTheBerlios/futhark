@@ -2,7 +2,7 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "../../utils/uids#.scm")
+(include "../../encode/uids#.scm")
 (include "../sessions#.scm")
 
 (declare (standard-bindings)
@@ -118,5 +118,3 @@
    file-session-set!
    file-session-ref
    file-clean-sessions))
-            
-               

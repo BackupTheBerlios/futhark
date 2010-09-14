@@ -6,6 +6,8 @@
   fsm-final-states
   fsm-transition-table
   fsm-states
+  ;; fsm-simplify-arcs
+  ;; fsm-clean
   nfa://
   nfa:++
   nfa:kleene
@@ -14,4 +16,7 @@
   nfa:set
   nfa->nfa-w/o-e
   nfa-w/o-e->dfa
-  nfa->dfa))
+  nfa->dfa
+  
+  fsm-clean
+  ))

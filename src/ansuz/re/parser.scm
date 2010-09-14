@@ -2,11 +2,9 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "../kernel#.scm")
-(include "../expressions#.scm")
+(include "../sources/string#.scm")
+(include "../char-stream-parser#.scm")
 (include "../extras#.scm")
-(include "../sources#.scm")
-(include "../language#.scm")
 
 (include "sets#.scm")
 (include "fsm#.scm")
@@ -33,38 +31,38 @@
   (char->integer #\0))
 
 (define-parser (decimal)
-  (reflect (head tail row col pos datum sc fl)
+  (reflect (st sc fl)
            (let(
-                (c (head datum)))
+                (c (stream-car st)))
              (if (char-numeric? c)
-                 (let loop ((datum (tail datum))
+                 (let loop ((st (stream-cdr st))
                             (k (- (char->integer c) (i0))))
                    (let(
-                        (c (head datum)))
+                        (c (stream-car st)))
                      (if (char-numeric? c)
-                         (loop (tail datum)
+                         (loop (stream-cdr st)
                                (+ (* k 10) (- (char->integer c) (i0))))
-                         (sc k datum fl))))
-                 (fl "not a decimal")))))
+                         (sc k st fl))))
+                 (fl "not a decimal" st sc)))))
  
 (define-parser (valid-char)
-  (reflect (head tail row col pos datum sc fl)
+  (reflect (st sc fl)
            (let(
-                (c (head datum)))
+                (c (stream-car st)))
              (cond
-              ((eof-object? c) (fl "end of object reached"))
+              ((eof-object? c) (fl "end of object reached" st sc))
               ((char=? c #\\)
                (let*(
-                     (datum (tail datum))
-                     (c1 (head datum)))
+                     (st (stream-cdr st))
+                     (c1 (stream-car st)))
                  (if (eof-object? c)
-                     (fl "end of object reached")
-                     (sc c1 (tail datum) fl))))
-                     
+                     (fl "end of object reached" st sc)
+                     (sc c1 (stream-cdr st) fl))))
+              
               ((memq c *-not-valid-*)
-               (fl "not a valid char"))
+               (fl "not a valid char" st sc))
               (else
-               (sc c (tail datum) fl))))))
+               (sc c (stream-cdr st) fl))))))
 
 (define-parser (re-interval p)
   (<>
@@ -113,7 +111,7 @@
 (define-parser (re-set)
   (>> (char #\[)
       (<- neg? (<> (char #\~) (return #f)))
-      (<- xs (repeat 1 seti))
+      (<- xs (repeat 1 (seti)))
       (char #\])
       (return (nfa:set (if neg? (set-complement (set-union+ xs))
                            (set-union+ xs))))))

@@ -1,10 +1,11 @@
 ;; given a finite state machine generates a scheme expression
-;; that is a valid parser in the sense of futhark/ansuz/language
+;; that is a valid parser in the sense of futhark/ansuz/
 
 ;; TODO, what about eof reached?
 ;; modify to handle this case
 (##namespace ("ansuz-re-cgen#"))
 (##include "~~/lib/gambit#.scm")
+
 (include "parser#.scm")
 (include "fsm#.scm")
 (include "sets#.scm")
@@ -54,18 +55,18 @@
         (,(caddr t)
          (if (= lim wpos) (string-append buf (make-string (+ 1 lim))) buf) ;; buf
          (if (= lim wpos) (+ 1 (* 2 lim)) lim)                             ;; lim
-         (tail wts)                                                  ;; wts
+         (stream-cdr wts)                                                  ;; wts
          (+ 1 wpos)                                                        ;; wpos
          ,(if term? 'wts 'fts)                                             ;; fts
          ,(if term? 'wpos 'fpos)))))                                       ;; fpos
-
+  
   ;; generates the cond expression for a particular state of this fsm
   (define (state->condition s)
     `(cond
       ,@(if (memq s (fsm-final-states fsm))
             `(((eof-object? c) (sc (substring buf 0 wpos) wts fl)))
             `(((and (eof-object? c) fpos) (sc (substring buf 0 fpos) fts fl))
-              ((eof-object? c) (fl "re failed"))))
+              ((eof-object? c) (fl "re failed" fts sc))))
       ,@(map
          transition->branch
          (filter (lambda (t) (eq? (car t) s))
@@ -73,7 +74,7 @@
       ,@(if (memq s (fsm-final-states fsm))
             `((else (sc (substring buf 0 wpos) wts fl)))
             `((fpos (sc (substring buf 0 fpos) fts fl))
-              (else (fl "re-failed"))))))
+              (else (fl "re-failed" wts sc))))))
 ;;       (,(if (memq s (fsm-final-states fsm)) #t ,fpos)
 ;;        (sc (substring buf 0 fpos) fts fl))
 ;;       (else
@@ -83,7 +84,7 @@
   (define (state->function s)
     `(lambda (buf lim wts wpos fts fpos)
        (let(
-            (c (head wts)))
+            (c (stream-car wts)))
          ,(state->condition s))))
       
   ;; generates a binding between the state and the function 
@@ -92,13 +93,13 @@
 
   ;; generates code that run the fsm
   (define (fsm->function)
-    `(let ()
-       (declare (not inline))
+    `(begin
+       ;; (declare (not safe) (not inline) (fixnum) (standard-bindings) (extended-bindings))
        ,@(map state->binding (fsm-states fsm))
        (,(fsm-initial-state fsm)
         (make-string ,initial-size) ;; buf
         ,(- initial-size 1)         ;; lim
-        datum                          ;; wts
+        st                          ;; wts
         0                           ;; wpos
         #f                          ;; fts
         #f)))                       ;; fpos
@@ -106,7 +107,7 @@
 
   ;; MAIN
   ;; the whole wrapped in a reflect expression
-  `(reflect (head tail row col pos datum sc fl)
+  `(reflect (st sc fl)
             ,(fsm->function)))
 
               

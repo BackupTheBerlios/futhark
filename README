@@ -3,21 +3,17 @@ To test this:
 Download and install Gambit-C scheme System.
 at <http://dynamo.iro.umontreal.ca/~gambit/wiki/index.php/Main_Page>
 
-then Run
-	     gsi fgi -e "(include \"fgi#.scm\")" futhark.scm
-	     
-	     or run the script fgi.sh
-             
+to install run gsi make/install (you have to have write access to main Gambit-C directory)
 
-with your browser visit the url
+run tests in test directory see test/README (futhark should be installed)
 
-	     http://localhost:1080
+to be able to load openssl wrapper you have to install openssl and opessl headers,
+then compile the file ~~/site-scheme/futhark/encode/openssl.scm
 
-and click on the examples.
+> cd /usr/local/Gambit-C/current/site-scheme/futhark/encode
+> gsc -cc-options "-lssl -lcrypt" openssl
 
-PS: actually only firefox if fully supported
-    opera works well, 
-    problems with internet explorer but something works too
-    more problems with webkit based safari and chrome
+to be able to load ehwas/w3c-logger you have to compile it
 
-send feedbacks to francesco bracchi <frbracch@gmail.com>
+> cd /usr/local/Gambit-C/current/site-scheme/futhark/ehwas
+> gsc w3c-logger

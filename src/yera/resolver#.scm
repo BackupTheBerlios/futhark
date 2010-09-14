@@ -1,3 +1,2 @@
 (##namespace
- ("yera-resolver#"
-  make-yera-resolver))
+ ("yera-resolver#" yera))

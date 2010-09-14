@@ -20,43 +20,16 @@
          ;; (not safe)
          (block))
 
-(define-structure response version code status headers printer)
+(define response-version (make-parameter "HTTP/1.1"))
 
-(define (make-empty-response v c s)
-  (make-response v c s (make-table init: #f) (lambda (p) 'ok)))
+(define-structure response code status header writer)
 
-(define (response-header-set! r k v)
-  (table-set! (response-headers r) k v))
+(define (write-http-response response #!optional (port (current-output-port)))
+  (and (response? response)
+       (let(
+            (display* (lambda (x) (display x port))))
+         (for-each display* (list (response-version) " " (response-code response) " " (response-status response) "\n"))
+         (for-each (lambda (pair) (for-each display* (list (car pair) ": " (cdr pair) "\n"))) (response-header response))
+         (newline port)
+         (parameterize ((current-output-port port)) ((response-writer response))))))
 
-(define (response-header-ref r k)
-  (table-ref (response-headers r) k))
-
-(define (response-append r p1)
-  (let(
-       (p0 (response-printer r)))
-    (response-printer-set!
-     r
-     (lambda (p) (p0 p) (p1 p)))))
-
-(define (writer w)
-  (lambda (p) (write w p)))
-
-(define (displayer w)
-  (lambda (p) (print port: p w)))
-
-(define (response-write r #!optional (p (current-output-port)))
-  (let(
-       (version (response-version r))
-       (code (response-code r))
-       (status (response-status r))
-       (headers (response-headers r))
-       (printer (response-printer r)))
-    (print port: p
-     (list "HTTP/" (car version) "." (cdr version) " " code " " status "\n"))
-    (table-for-each
-     (lambda (k v)
-       (print port: p (list k ": " v #\newline)))
-     headers)
-    (newline p)
-    (printer p)
-    ))

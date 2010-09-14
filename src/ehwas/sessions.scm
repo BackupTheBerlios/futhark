@@ -1,6 +1,7 @@
 (##namespace ("ehwas-sessions#"))
 
 (##include "~~/lib/gambit#.scm")
+(include "cookies#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
@@ -57,3 +58,21 @@
         (thread-sleep! (clean-session-timeout))
         ((session-driver-clean (current-session-driver)))
         (loop))))))
+
+(define (make-request-session request)
+  (let*(
+        (cookies (request-cookies request))
+        (session-id (and cookies (table-ref cookies 'Session-id #f)))) ;; todo modify cookies so that keys are symbols
+    (session-init session-id)))
+
+(define *-memo-* (make-table weak-keys: #t))
+
+(define (request-session request)
+  (or (table-ref *-memo-* request #f)
+      (let(
+           (session (make-request-session request)))
+        (table-set! *-memo-* request session)
+        session)))
+
+    
+        

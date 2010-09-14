@@ -26,76 +26,47 @@
 ;; orelse is the pratical
 
 (##namespace ("ansuz-orelse#" orelse orelse*))
-(##include "reflect#.scm")
 
-(define-macro (orelse* m n . x)
+(define-macro+ (orelse m n)
   (let(
        (mm (gensym 'm))
        (nn (gensym 'n))
-       
-       (head (gensym 'head))
-       (tail (gensym 'tail))
-       (row (gensym 'row))
-       (column (gensym 'column))
-       (position (gensym 'position))
-       (datum (gensym 'datum))
-       
+       (st (gensym 'st))
        (sc (gensym 'sc))
        (fl (gensym 'fl))
-       (ignore (gensym '*ignore*)))
-  `(with-state ,x
-               (reify (mm ,n)
-                      (reify (nn ,n)
-                             (reflect (,head ,tail ,row ,column ,position ,datum ,sc ,fl)
-                                      (,mm ,head ,tail ,row ,column ,position ,datum
-                                           (lambda (,ignore) (,n ,head ,tail ,row ,column ,position ,datum ,sc ,fl)))))))))
+       (rr (gensym 'rr))
+       (vv (gensym 'vv))
+       (st1 (gensym 'st))
+       (sc1 (gensym 'sc))
+       (fl1 (gensym 'fl)))
 
-;; (define-syntax orelse*
-;;   (syntax-rules ()
-;;     ((_ ?m ?n ?x ...)
-;;      (with-state (?x ...)
-;;                  (reify (m ?m)
-;;                         (reify (n ?n)
-;;                                (reflect (ts sc fl)
-;;                                         (m ts
-;;                                            sc
-;;                                            (lambda (r) (n ts sc fl))))))))))
+    `(reify (,mm ,m)
+            (reify (,nn ,n)
+                   (reflect (,st ,sc ,fl)
+                            (,mm ,st 
+                                 (lambda (,vv ,st1 ,fl1) (,sc ,vv ,st1 ,fl))
+                                 ;; (lambda (,vv ,st1 ,zk1 ,fl1) (,sc ,vv ,st1 ,zk1 (if ,zk ,fl ,fl1)))
+                                 (lambda (,rr ,st1 ,sc1)
+                                   (,nn ,st ,sc ,fl))))))))
 
-(define-macro (orelse m n . x)
+;; nondeterministic variation
+(define-macro+ (orelse* m n)
   (let(
        (mm (gensym 'm))
        (nn (gensym 'n))
-       
-       (head (gensym 'head))
-       (tail (gensym 'tail))
-       (row (gensym 'row))
-       (column (gensym 'column))
-       (position (gensym 'position))
-       (datum (gensym 'datum))
-       
+       (st (gensym 'st))
        (sc (gensym 'sc))
        (fl (gensym 'fl))
-       (v (gensym 'v))
-       
-       (datum1 (gensym 'datum1))
-       
-       (fl1 (gensym 'fl1))
-       (ignore (gensym 'ignore)))
-    `(with-state ,x
-                 (reify (,mm ,m)
-                        (reify (,nn ,n)
-                               (reflect (,head ,tail ,row ,column ,position ,datum ,sc ,fl)
-                                        (,mm ,head ,tail ,row ,column ,position ,datum
-                                             (lambda (,v ,datum1 ,fl1) (,sc ,v ,datum1 ,fl))
-                                             (lambda (,ignore) (,nn ,head ,tail ,row ,column, position ,datum ,sc ,fl)))))))))
+       (rr (gensym 'rr))
+       (vv (gensym 'vv))
+       (st1 (gensym 'st))
+       (sc1 (gensym 'sc))
+       (fl1 (gensym 'fl)))
 
-;; (define-syntax orelse
-;;   (syntax-rules ()
-;;     ((_ ?m ?n ?x ...)
-;;      (with-state (?x ...)
-;;                  (reify (m ?m)
-;;                         (reify (n ?n)
-;;                                (reflect (ts sc fl)
-;;                                         (m ts
-;;                                            (lambda (v ts fl1) (sc v ts fl))
-;;                                            (lambda (*ignore*) (n ts sc fl))))))))))
+    `(reify (,mm ,m)
+            (reify (,nn ,n)
+                   (reflect (,st ,sc ,fl)
+                            (,mm ,st
+                                 ,sc
+                                 (lambda (,rr ,st1 ,sc1)
+                                   (,nn ,st ,sc ,fl))))))))

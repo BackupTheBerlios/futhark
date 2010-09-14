@@ -1,8 +1,9 @@
-with (Yera) with (Actors) with (ActorsTest) {
+with (Yera) {
 
     var usereventFire = function (ev) {
 	throw "uninitialized fire action";
     };
+
     var YeraUserevent = function () {
 	
 	var removeRole = function (ls, m) {
@@ -24,7 +25,7 @@ with (Yera) with (Actors) with (ActorsTest) {
 	    recv(
 		cond (
 		    hasType (Register, function (m) {
-			send_actor (m.from, new Update (m.role, null));
+			send (m.from, new Update (m.role, null));
 			usereventUpdate (ls.concat ([m]));
 		    }),
 		    hasType (Unregister, function (m) {
@@ -33,8 +34,8 @@ with (Yera) with (Actors) with (ActorsTest) {
 		    hasType (YeraUserevent, function (m) {
 			for (var j = 0; j < ls.length; j++) {
 			    var l = ls [j];
-			    send_actor (l.from, new Update (l.role, m.event));
-			    send_actor (l.from, new Update (l.role, null));
+			    send (l.from, new Update (l.role, m.event));
+			    send (l.from, new Update (l.role, null));
 			}
 			usereventUpdate (ls);
 		    }),
@@ -44,13 +45,13 @@ with (Yera) with (Actors) with (ActorsTest) {
 	};
 	
 	var usereventSource = src (function () {
-	    var me = self ();
+	    var me = currentActor ();
 	    usereventFire = function (m) {
-		send_actor (me, new YeraUserevent (m));
+		send (me, new YeraUserevent (m));
 	    };	    
 	    usereventUpdate ([]);
 	});
-
+	
 	var usereventState = function (v0) {
 	    var r = st (v0);
 	    r.addSource (usereventSource, be (usereventState));

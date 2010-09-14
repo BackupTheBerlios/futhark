@@ -34,19 +34,18 @@
          (term? (memq (car t) (fsm-final-states fsm))))
       `(,(set->predicate (cadr t))
         (,(caddr t)
-         wpos1
+         (+ 1 wpos)
          ,(if term? 'wpos 'fpos)))))
   
   (define (state->condition s)
     `(if (>= wpos strlen) ,(if (memq s (fsm-final-states fsm)) 'wpos 'fpos)
          (let(
-              (c (string-ref str wpos))
-              (wpos1 (+ 1 wpos)))
+              (c (string-ref str wpos)))
            (cond
             ,@(map
                transition->branch
                (filter (lambda (t) (eq? (car t) s))
-                     (fsm-transition-table fsm)))
+                       (fsm-transition-table fsm)))
             ,@(if (memq s (fsm-final-states fsm))
                   `((else wpos))
                   `((else fpos)))))))
@@ -55,14 +54,12 @@
   (define (state->function s)
     `(lambda (wpos fpos)
        ,(state->condition s)))
-
-  (define (state->binding s)
-    `(define ,s ,(state->function s)))
   
   `(lambda (str p0)
-     (declare (not inline) (fixnum))
-     (define strlen (string-length str))
-     ,@(map state->binding (fsm-states fsm))
-     (,(fsm-initial-state fsm) p0 #f)))
-
-
+     (declare (not safe) (fixnum) (block))
+     (letrec(
+             (strlen (string-length str))
+             ,@(map (lambda (s)
+                      `(,s (lambda (wpos fpos) ,(state->condition s))))
+                    (fsm-states fsm)))
+       (,(fsm-initial-state fsm) p0 #f))))

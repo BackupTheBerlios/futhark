@@ -6,7 +6,9 @@
 (include "request#.scm")
 (include "template#.scm")
 (include "errors#.scm")
- 
+
+(##include "~~/lib/gambit#.scm")
+
 (declare (standard-bindings)
          (extended-bindings)
          ;;(not safe)
@@ -23,19 +25,19 @@
          (response
           (request-version ,req) ,code ,status
           (header
-           ("Pragma" "no-cache")
-           ("Cache-Control" "no-cache, must revalidate")
-           ("Expires:" "-1")
-           ("Content-type" "text/html"))
-          (text
+           Pragma: "no-cache"
+           Cache-Control: "no-cache, must revalidate"
+           Expires: "-1"
+           Content-type: "text/html")
+          (print
+           (html-template
+           "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
            (html
-            "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
-            (html
-             (head (title "Webserver error " ,code))
-             (body
-              (center
-               (h1 "Web server error " ,code)
-               (h4 ,status)))))))))))
+            (head (title "Webserver error " ,code))
+            (body
+             (center
+              (h1 "Web server error " ,code)
+              (h4 ,status)))))))))))
 
 (define-default-for-error 400 "Bad Request")
 (define-default-for-error 401 "Unauthorized Access")
@@ -77,12 +79,12 @@
     (response
      (request-version req) 500 "Internal Server Error"
      (header
-      ("Pragma" "no-cache")
-      ("Cache-Control" "no-cache, must revalidate")
-      ("Expires:" "-1")
-      ("Content-type" "text/html"))
-     (text
-      (html
+      Pragma: "no-cache"
+      Cache-Control: "no-cache, must revalidate"
+      Expires: "-1"
+      Content-type: "text/html")
+     (print
+      (html-template
        "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
        (html
         (head
@@ -96,7 +98,7 @@
                 (lambda (p)
                   (print
                    port: p
-                   (html
+                   (html-template
                     (h4 ,(string->html (exception->string exception continuation)))
                     (h5 "In:")
                     (textarea (@ (cols "80") (rows "10") (readonly "true")) ,(backtrace->string continuation)))))))))))))))

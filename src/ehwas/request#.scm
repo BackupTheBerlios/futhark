@@ -1,13 +1,15 @@
 (##namespace
  ("ehwas-request#"
-  make-request
-  http-request
+  read-http-request
+  
   request-method
   request-uri-string
   request-uri
   request-version
   request-header
-  request-port
+  request-scheme
+  ;; request-authority
   request-path
-  request-uri-query
- ))
+  ;; request-fragment
+  make-request
+  ))

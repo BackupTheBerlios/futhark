@@ -1,5 +1,6 @@
 (##namespace
  ("rfc3986#"
+  string->uri
   make-uri
   uri?
   uri-scheme

@@ -92,13 +92,13 @@ end-format-time
                   (begin
                     (! logger
                        `(,(datetime) " "
-                         ,(address->string (socket-info-address (tcp-client-peer-socket-info (real-http-port)))) " "
+                         ,(address->string (socket-info-address (tcp-client-peer-socket-info (current-http-port)))) " "
                          ,(request-method req) " "
                          ,(table-ref (request-header req) "Host" "-") " "
                          ,(request-uri-string req) " "
                          ,(response-code res) " "
                          "\"" ,(response-status res) "\" "
-                         ,(table-ref (response-headers res) "Content-Length" "-") " "))
+                         ,(table-ref (response-header res) "Content-Length" "-") " "))
                     res))))))
     (make-will
      wrapper

@@ -1,10 +1,7 @@
 (##namespace
  ("ehwas-server#"
-  make-server
-  start!
-  stop!
-  real-http-port
-  server-host
-  server-port
-  server-resolver
-  server-resolver-set!))
+  current-http-port
+  http-server
+  http-service-register!
+  http-service-unregister!
+  ))

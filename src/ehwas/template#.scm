@@ -1,88 +1,6 @@
-(##namespace ("sxml#" sgml html xml block image))
+(##namespace ("ehwas-template#" sgml-template html-template xml-template svg-template xhtml-template))
 
-;; (define-macro (sxml e)
-;;   (cond
-;;    ((symbol? e) `(sxml ,(symbol->string e)))
-;;    ((number? e) (number->string e))
-;;    ((string? e) e)
-;;    ((not (pair? e))
-;;     (raise `("syntax error" ,e)))
-;;    ((eq? (car e) 'unquote) (cadr e))
-;;    (else
-;;     (let*(
-;;           (n (car e))
-;;           (atr? (and (pair? (cdr e)) (pair? (cadr e)) (eq? (caadr e) '@)))
-;;           (a (if atr? (cdadr e) '()))
-;;           (cs (if atr? (cddr e) (cdr e))))
-;;       (list
-;;        'quasiquote
-;;        (append
-;;         (list "<" (list 'unquote (list 'sxml n)))
-;;         (let loop ((a a))
-;;           (if (null? a) '()
-;;               (append 
-;;                (list " " (list 'unquote (list 'sxml (caar a)))
-;;                      "=\""
-;;                      (list 'unquote (list 'sxml (cadar a))) "\"")
-;;                (loop (cdr a)))))
-;;         (if (and (null? cs) (not (eq? n 'script)))
-;;             (list "/>")
-;;             (append
-;;              (list ">")
-;;              (map (lambda (c)
-;;                     (list 'unquote (list 'sxml c)))
-;;                   cs)
-;;              (list "</" (list 'unquote (list 'sxml n)) ">")))))))))
-
-
-;; (define-macro (image fn)
-;;   (let(
-;;        (prt (gensym 'prt)))
-;;     `(lambda (,prt)
-;;        ,(call-with-input-file fn
-;;           (lambda (p)
-;;             (let*(
-;;                   (siz (file-size fn))
-;;                   (buf (make-u8vector siz)))
-;;               (read-subu8vector buf 0 siz p)
-;;               `(write-subu8vector (quote ,buf) 0 ,siz ,prt)))))))
-
-(define-macro (image file)
-  (let(
-       (port (gensym 'port)))
-    `(lambda (,port)
-       (for-each
-        (lambda (b) (write-subu8vector b 0 (u8vector-length b) ,port))
-        (list
-         ,@(call-with-input-file file
-             (lambda (p)
-               (let loop ()
-                 (let*(
-                       (buf (make-u8vector 65536))
-                       (len (read-subu8vector buf 0 65536 p)))
-                  (if (< len 65536)
-                      (list `(##still-copy (quote ,(subu8vector buf 0 len))))
-                      (begin
-                        (cons
-                         `(##still-copy (quote ,buf))
-                         (loop)))))))))))))
-
-(define-macro (block file)
-  `(list
-    ,@(call-with-input-file file
-        (lambda (p)
-          (let loop ()
-            (let*(
-                  (buf (make-string 65536))
-                  (len (read-substring buf 0 65536 p)))
-              (if (< len (string-length buf))
-                  (list `(##still-copy ,(substring buf 0 len)))
-                  (begin
-                    (cons
-                     `(##still-copy ,buf)
-                     (loop))))))))))
-
-(define-macro (sgml #!key (empty '()) . e)
+(define-macro (sgml-template #!key (empty '()) . e)
   (list
    'quasiquote
    (letrec(
@@ -99,17 +17,23 @@
                 (let*(
                       (n (car e))
                       (xn (ssgml n))
-                      (atr? (and (pair? (cdr e)) (pair? (cadr e)) (eq? (caadr e) '@)))
-                      (as (if atr? (cdadr e) '()))
+                      (atr? (and (>= (length e) 2) (pair? (cadr e)) (keyword? (caadr e))))
+                      (as (if atr? (cadr e) '()))
                       (cs (if atr? (cddr e) (cdr e))))
                   (list
                    "<" xn
-                   (map (lambda (a)
-                          (list " " (ssgml (car a)) "=\"" (map ssgml (cdr a)) "\""))
-                        as)
-                   (if (member n empty)
-                       "/>"
-                       (list ">" (map ssgml cs) "</" xn ">"))))))))
+                   (let attributes ((as as) (rs '()))
+                     (if (null? as) (reverse rs)
+                         (let(
+                              (n (car as))
+                              (a (cadr as)))
+                           (attributes (cddr as)
+                                 (cons (list " " (keyword->string (car as)) "=\"" (ssgml (cadr as)) "\"") rs)))))
+                   (cond
+                    ((member n empty) ">")
+                    ((null? cs) "/>")
+                    (else
+                     (list ">" (map ssgml cs) "</" xn ">")))))))))
            (flatten
             (lambda (ss)
               (cond
@@ -142,8 +66,14 @@
           (simplify (flatten (map ssgml e)))))))
 
 
-(define-macro (html . e)
-  `(sgml empty: (area base basefont br col frame hr img input isindex link meta param) ,@e))
+(define-macro (html-template . e)
+  `(sgml-template empty: (area base basefont br col frame hr img input isindex link meta param) ,@e))
 
-(define-macro (xml . e)
-  `(sgml empty: () ,@e))
+(define-macro (xml-template . e)
+  `(sgml-template empty: () ,@e))
+
+(define-macro (svg-template . e)
+  `(xml-template ,@e))
+
+(define-macro (xhtml-template e)
+  `(xml-template ,@e))

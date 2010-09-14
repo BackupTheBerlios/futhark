@@ -1,77 +1,54 @@
 (##namespace ("ansuz-monad#"
               lambda+
+              define-macro+
               return
-              bind))
-
-(include "reflect#.scm")
-(declare (inlining-limit 0))
+              bind
+              sequence))
 
 (define-macro (lambda+ f b)
   (let(
-       (head (gensym 'head))
-       (tail (gensym 'tail))
-       (row (gensym 'row))
-       (column (gensym 'column))
-       (position (gensym 'position))
-       (datum (gensym 'datum))
+       (st (gensym 'st))
        (sc (gensym 'sc))
        (fl (gensym 'fl)))
-    `(lambda ,(append f (list head tail row column position datum sc fl))
-       (with-state (,head ,tail ,row ,column ,position ,datum ,sc ,fl) ,b))))
 
-(define-macro (return v . x)
+    `(lambda ,(append f (list st sc fl))
+       (with-state (,st ,sc ,fl) ,b))))
+
+(define-macro (define+ a b)
+  `(define ,(car a) (lambda+ ,(cdr a) ,b)))
+
+(define-macro (define-macro+ h b)
   (let(
-       (head (gensym 'head))
-       (tail (gensym 'tail))
-       (row (gensym 'row))
-       (column (gensym 'column))
-       (position (gensym 'position))
-       (datum (gensym 'datum))
+       (st (gensym 'st))
        (sc (gensym 'sc))
        (fl (gensym 'fl)))
-    `(with-state ,x
-                 (reflect (,head ,tail ,row ,column, position ,datum ,sc ,fl)
-                          (,sc ,v ,datum ,fl)))))
+    `(define-macro ,(append h (list st sc fl))
+       (list 'with-state (list ,st ,sc ,fl) ,b))))
 
-(define-macro (bind p n head tail row column position datum sc fl)
+(define-macro+ (return v)
+  (let(
+       (st (gensym 'st))
+       (sc (gensym 'sc))
+       (fl (gensym 'fl)))
+    `(reflect (,st ,sc ,fl) (,sc ,v ,st ,fl))))
+
+(define-macro+ (bind p n)
   (let(
        (v (car p))
        (m (cadr p))
-       (datum1 (gensym 'datum1))
-       (fl1 (gensym 'fl1)))
-    `(with-state
-      (,head ,tail ,row ,column ,position ,datum
-       (lambda (,v ,datum1 ,fl1) (with-state (,head ,tail ,row ,column ,position ,datum1 ,sc ,fl1) ,n))
-       ,fl)
-      ,m)))
+       (mm (gensym 'mm))
+       (nn (gensym 'nn))
+       (st (gensym 'st))
+       (sc (gensym 'sc))
+       (fl (gensym 'fl))
+       (st1 (gensym 'st))
+       (fl1 (gensym 'fl)))
+    `(reify (,mm ,m)
+            (reify (,nn ,n)
+                   (reflect (,st ,sc ,fl)
+                            (,mm ,st (lambda (,v ,st1 ,fl1) (,nn ,st1 ,sc ,fl1)) ,fl))))))
 
-
-;; (define-macro (lambda+ f b)
-;;   (let(
-;;        (ts (gensym 'ts))
-;;        (sc (gensym 'sc))
-;;        (fl (gensym 'fle)))
-;;     `(lambda ,(append f (list ts sc fl))
-;;        (with-state (,ts ,sc ,fl) ,b))))
-
-;; (define-macro (return v . x)
-;;   (let(
-;;        (ts (gensym 'ts))
-;;        (sc (gensym 'sc))
-;;        (fl (gensym 'fl)))
-;;     `(with-state ,x
-;;                 (reflect (,ts ,sc ,fl)
-;;                          (,sc ,v ,ts ,fl)))))
-
-;; (define-macro (bind p n ts sc fl)
-;;   (let(
-;;        (v (car p))
-;;        (m (cadr p))
-;;        (ts1 (gensym 'ts1))
-;;        (fl1 (gensym 'fl1)))
-;;     `(with-state
-;;       (,ts
-;;        (lambda (,v ,ts1 ,fl1) (with-state (,ts1 ,sc ,fl1) ,n))
-;;        ,fl)
-;;       ,m)))
-
+(define-macro+ (sequence a b)
+  (let(
+       (v (gensym 'v)))
+    `(bind (,v ,a) ,b)))

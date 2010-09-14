@@ -2,59 +2,45 @@
 
 (##include "~~/lib/gambit#.scm")
 
-(include "../ansuz/language#.scm")
-(include "../ansuz/kernel#.scm")
-(include "../ansuz/extras#.scm")
+(include "../ansuz/sources/port#.scm")
+(include "../ansuz/char-stream-parser#.scm")
+(include "../ansuz/re#.scm")
+
 (include "rfc822#.scm")
 (include "rfc3986#.scm")
 
-(include "request#.scm")
-
 (declare (standard-bindings)
          (extended-bindings)
-         (block)
          ;;(not safe)
-         )
+         (block))
 
-(define-structure request
-  method uri-string uri version
-  header port)
+(define-structure request method uri-string uri version header)
 
-(define (request-path r)
-  (uri-path (request-uri r)))
+;; (define-parser (token-list)
+;;   (<> (>> (<> (char #\space) (char #\newline)) (return '()))
+;;       (>> (<- c (any))
+;;           (<- cs (token-list))
+;;           (return (cons c cs)))))
 
-(define (request-uri-query r)
-  (uri-query (request-uri r)))
+;; (define-parser (token)
+;;   (>> (<- x (token-list))
+;;       (return (list->string x))))
 
-(define (request-autority r)
-  (uri-authority (request-uri r)))
+;; (define-regexp token "[~ \n]*")
 
-(define (request-header-ref r v)
-  (table-ref (request-header r) v))
+;; (define-parser (method)
+;;   (<> (word "GET")
+;;       (word "POST")
+;;       (word "OPTIONS")
+;;       (word "HEAD")
+;;       (word "PUT")
+;;       (word "DELETE")
+;;       (word "TRACE")
+;;       (word "CONNECT")))
 
-(define-parser (token-list)
-  (<> (>> (<> (char #\space) (char #\newline)) (return '()))
-      (>> (<- c (any))
-          (<- cs (token-list))
-          (return (cons c cs)))))
+(define-regexp method "GET|POST|OPTIONS|HEAD|PUT|DELETE|TRACE|CONNECT")
 
-(define-parser (token)
-  (>> (<- x (token-list))
-      (return (list->string x))))
-
-(define-parser (method)
-  (<> (word "GET")
-      (word "POST")
-      (word "OPTIONS")
-      (word "HEAD")
-      (word "PUT")
-      (word "DELETE")
-      (word "TRACE")
-      (word "CONNECT")))
-
-(define-parser (space)
-  (<> (>> (char #\space) (space))
-      (return 'ok)))
+(define-regexp space " *")
 
 (define digit->number
   (let(
@@ -63,24 +49,42 @@
       (- (char->integer v) d0))))
 
 (define-parser (http-version)
-  (>> (word "HTTP/")
-      (<- mj (digit))
-      (char #\.)
-      (<- mn (digit))
-      (return (cons (digit->number mj)
-                       (digit->number mn)))))
+  (regexp "HTTP/")
+  (<- mj (digit))
+  (char #\.)
+  (<- mn (digit))
+  (return (cons (digit->number mj)
+                (digit->number mn))))
 
-(define-parser (http-request p)
-  (>> (<- m (method))
-      (space)
-      (<- su (token))
-      (space)
-      (<- v (<> (http-version) (return '(1 . 0))))
-      (char #\newline)
-      (<- hd (rfc822))
-      (let(
-           (u (run (rfc3986) su)))
-        (return (make-request
-                 m su u v
-                 (list->table hd)
-                 p)))))
+
+(define-parser (http-request)
+  (<- m (method))
+  (space)
+  (<- su (regexp "[~ \n]*"))
+  (space)
+  (<- v (<> (http-version) (return '(1 . 0))))
+  (space)
+  (char #\newline)
+  (<- hd (rfc822))
+  (return (make-request
+           (string->symbol m) su (string->uri su) v hd)))
+
+(define (read-http-request #!optional (port (current-input-port)))
+  (run (http-request) port))
+
+(define (request-scheme request)
+  (if (request? request)
+      (uri-scheme (request-uri request))))
+
+;; (define (request-authority request)
+;;   (uri-authority (request-uri request)))
+
+(define (request-path request)
+  (uri-path (request-uri request)))
+
+;; (define (request-query request)
+;;   (uri-query (request-uri request)))
+
+;; (define (request-fragment request)
+;;   (uri-fragment (request-uri request)))
+

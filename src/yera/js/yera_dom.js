@@ -1,5 +1,5 @@
 var YeraDom = function () {
-    with (Yera) with (Actors) with (ActorsTest) with (YeraCore.bindings) {
+    with (Yera) with (YeraCore.bindings) {
 	
 	var ismsie = navigator.appName == "Microsoft Internet Explorer";
 
@@ -19,12 +19,12 @@ var YeraDom = function () {
 	var timeUpdateSuspended = function () {
 	    recv(
 		hasType (Register, function (m) {
-		    var me = self ();
+		    var me = currentActor ();
 		    var h = setInterval (function () {
-			send_actor (me, new YeraEvent ("ciao"));
+			send (me, new YeraEvent ("ciao"));
 		    }, __ticks__);
 		    var t = now ();
-		    send_actor (m.from, new Update (m.role, t));
+		    send (m.from, new Update (m.role, t));
 		    timeUpdate (t, h, [m]);
 		}));
 	};
@@ -33,7 +33,7 @@ var YeraDom = function () {
 	    recv ( 
 		cond (
 		    hasType (Register, function (m) {
-			send_actor (m.from, new Update (m.role, t));
+			send (m.from, new Update (m.role, t));
 			timeUpdate (t, h, ls.concat ([m]));
 		    }),
 		    hasType (Unregister, function (m) {
@@ -47,7 +47,7 @@ var YeraDom = function () {
 			var t1 = now ();
 			for (var j = 0; j < ls.length; j++) {
 			    var l = ls [j];
-			    send_actor (l.from, new Update (l.role, t1));
+			    send (l.from, new Update (l.role, t1));
 			}
 			timeUpdate (t1, h, ls);
 		    })));
@@ -95,7 +95,7 @@ var YeraDom = function () {
 // 	var eventUpdateSuspended = function (x) {
 // 	    recv(
 // 		hasType (Register, function (m) {
-// 		    var me = self ();
+// 		    var me = currentActor ();
 // 		    var h = function (ev) {
 // 			if (! ev) ev = window.event;
 // 			if (ev.preventDefault) ev.preventDefault ();
@@ -135,9 +135,9 @@ var YeraDom = function () {
 // 			    null;
 // 			};
 
-// 			send_actor (me, new YeraEvent (ev));
+// 			send (me, new YeraEvent (ev));
 // 		    };
-// 		    send_actor (m.from, new Update (m.role, null));
+// 		    send (m.from, new Update (m.role, null));
 // 		    registerEvent (x, h);
 // 		    eventUpdate (x, h, [m]);
 // 		}));
@@ -146,7 +146,7 @@ var YeraDom = function () {
 	var eventUpdateSuspended = function (x) {
 	    recv(
 		hasType (Register, function (m) {
-		    var me = self ();
+		    var me = currentActor ();
 		    var h = function (ev) {
 			if (ismsie) {
 			    // msie incompatibility issue
@@ -157,9 +157,9 @@ var YeraDom = function () {
 			} else  {
 			    ev.preventDefault ();
 			}
-			send_actor (me, new YeraEvent (ev));
+			send (me, new YeraEvent (ev));
 		    };
-		    send_actor (m.from, new Update (m.role, null));
+		    send (m.from, new Update (m.role, null));
 		    registerEvent (x, h);
 		    eventUpdate (x, h, [m]);
 		}));
@@ -170,7 +170,7 @@ var YeraDom = function () {
 	    recv(
 		cond (
 		    hasType (Register, function (m) {
-			send_actor (m.from, new Update (m.role, null));
+			send (m.from, new Update (m.role, null));
 			eventUpdate (x, h, ls.concat ([m]));
 		    }),
 		    hasType (Unregister, function (m) {
@@ -183,8 +183,8 @@ var YeraDom = function () {
 		    hasType (YeraEvent, function (m) {
 			for (var j = 0; j < ls.length; j++) {
 			    var l = ls [j];
-			    send_actor (l.from, new Update (l.role, m.event));
-			    send_actor (l.from, new Update (l.role, null));
+			    send (l.from, new Update (l.role, m.event));
+			    send (l.from, new Update (l.role, null));
 			}
 			eventUpdate (x, h, ls);
 		    })));

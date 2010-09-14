@@ -7,186 +7,168 @@
 (##namespace ("rfc3986#"))
 
 (##include "~~/lib/gambit#.scm")
-(include "../ansuz/language#.scm")
-(include "../ansuz/kernel#.scm")
-(include "../ansuz/extras#.scm")
+(include "../ansuz/sources/string#.scm")
+(include "../ansuz/char-stream-parser#.scm")
+
+(include "../ansuz/re#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
          (block)
-         ;;(not safe)
+         (safe)
          (fixnum))
 
 (define-structure uri scheme authority path query fragment)
 
-(define (fold-left f i l)
-  (let fold ((i i) (l l))
-    (if (null? l) i
-        (fold (f i (car l)) (cdr l)))))
+;; (declare (not safe))
 
-(define digit->number
-  (let(
-       (d0 (char->integer #\0)))
-    (lambda (d)
-      (- (char->integer d) d0))))
-
-(define locase->number
-  (let(
-       (d0 (- (char->integer #\a) 10)))
-    (lambda (c)
-      (- (char->integer c) d0))))
-
-(define upcase->number
-  (let(
-       (d0 (- (char->integer #\A) 10)))
-    (lambda (c)
-      (- (char->integer c) d0))))
-
-(define-parser (digit-number)
-               (>> (<- d (digit))
-                   (return (digit->number d))))
-
-(define-parser (locase-number)
-                 (>> (<- c (interval #\a #\f))
-                     (return (locase->number c))))
-
-(define-parser (upcase-number)
-                 (>> (<- c (interval #\A #\F))
-                     (return (upcase->number c))))
-
-(define-parser (hex-digit-number)
-               (<> (digit-number)
-                   (upcase-number)
-                   (locase-number)))
-
-(define-parser (gen-delims)
-               (<> (char #\:)
-                   (char #\/)
-                   (char #\?)
-                   (char #\#)
-                   (char #\@)
-                   (char #\[)
-                   (char #\])))
-
-(define-parser (sub-delims)
-               (<> (char #\!)
-                   (char #\$)
-                   (char #\&)
-                   (char #\')
-                   (char #\()
-                   (char #\))
-                   (char #\*)
-                   (char #\+)
-                   (char #\,)
-                   (char #\;)
-                   (char #\=)))
-
-(define-parser (reserved)
-                 (<> (gen-delims)
-                     (sub-delims)))
-  
-(define-parser (unreserved)
-               (<> (alpha)
-                   (digit)
-                   (char #\-)
-                   (char #\.)
-                   (char #\_)
-                   (char #\~)))
-
-(define-parser (pct-encoded)
-               (>> (char #\%)
-                   (<- n0 (hex-digit-number))
-                   (<- n1 (hex-digit-number))
-                   (return (integer->char (+ (* 16 n0) n1)))))
+(define-regexp re-port "[0-9]{1,5}")
 
 (define-parser (port)
-                 (>> (<- c (digit-number))
-                     (<- cs (upto 5 digit-number))
-                     (let(
-                          (p (fold-left (lambda (i c) (+ c (* i 10))) c cs)))
-                       (if (<= p 65535) (return p) (fail "port number too high")))))
+  (<- c (re-port))
+  (let(
+       (p (string->number c)))
+    (if (< p 65536)
+        (return p)
+        (fail "port number too high"))))
 
 
-(define-parser (scheme)
-  (>> (<- c (alpha))
-      (<- cs (kleene (parser () (<> (alpha)
-                                    (digit)
-                                    (char #\+)
-                                    (char #\-)
-                                    (char #\.)))))
-      (return (list->string (cons c cs)))))
+;; (define-parser (scheme)
+;;   (>> (<- c (alpha))
+;;       (<- cs (kleene (parser () (<> (alpha)
+;;                                     (digit)
+;;                                     (char #\+)
+;;                                     (char #\-)
+;;                                     (char #\.)))))
+;;       (return (list->string (cons c cs)))))
+
+(define-regexp scheme "[a-zA-Z][a-zA-Z0-9\\+\\-\\.]*")
+
+;; (define-parser (userinfo)
+;;   (>> (<- cs (kleene (parser () (<> (unreserved)
+;;                                     (pct-encoded)
+;;                                     (sub-delims)
+;;                                     (char #\:)))))
+;;       (return (list->string cs))))
+
+(define (pct->u8vector s)
+  (call-with-output-u8vector
+   (u8vector)
+   (lambda (out)
+     (let for ((j 0))
+       (if (>= j (string-length s)) 'ok
+           (let(
+                (c (string-ref s j)))
+             (cond
+              ((char=? c #\%)
+               (write-char (integer->char (string->number (substring s (+ j 1) (+ j 3)) 16)) out)
+               (for (+ j 3)))
+              ((char=? c #\+)
+               (write-char #\space out)
+               (for (+ j 1)))
+              (else
+               (write-char c out)
+               (for (+ j 1))))))))))
+
+(define (pct-decode s)
+  (if (= 0 (string-length s)) ""
+      (call-with-input-u8vector
+       (list init: (pct->u8vector s)
+             char-encoding: 'UTF-8)
+       (lambda (p) (read-line p #f)))))
+
+;; (define-regexp re-userinfo "([a-zA-Z0-9]|\\-|\\.|\\_|\\~|%[0-9a-fA-F]{2}|!|$|&|\\'|\\(|\\)|\\*|\\+|\\,|\\;|=|:)*")
+
+(define-regexp re-userinfo  "([a-zA-Z0-9!$&',;=:\\-\\.\\_\\~\\(\\)\\*\\+]|%[0-9a-fA-F]{2})*")
 
 (define-parser (userinfo)
-  (>> (<- cs (kleene (parser () (<> (unreserved)
-                                    (pct-encoded)
-                                    (sub-delims)
-                                    (char #\:)))))
-      (return (list->string cs))))
+  (>> (<- c (re-userinfo))
+      (return (pct-decode c))))
 
-(define-parser (h8)
-  (>> (<- cs (repeat-max 1 3 digit-number))
-      (let(
-           (v (fold-left (lambda (i t) (+ t (* 10 i))) 0 cs)))
-        (if (and (>= v 0) (<= v 255))
-            (return v)
-            (fail "h8")))))
+;; (define-parser (h8)
+;;   (>> (<- cs (repeat-max 1 3 digit-number))
+;;       (let(
+;;            (v (fold-left (lambda (i t) (+ t (* 10 i))) 0 cs)))
+;;         (if (and (>= v 0) (<= v 255))
+;;             (return v)
+;;             (fail "h8")))))
 
-(define-parser (ipv4-list)
-  (>> (<- b (h8))
-      (<- bs (times 3 (parser () (>> (char #\.) (h8)))))
-      (return (cons b bs))))
+;; (define-parser (ipv4-list)
+;;   (>> (<- b (h8))
+;;       (<- bs (times 3 (parser () (>> (char #\.) (h8)))))
+;;       (return (cons b bs))))
+
+;; (define-parser (ipv4)
+;;   (>> (<- bs (ipv4-list))
+;;       (return `(ip 4 ,@bs))))
+
+(define (string-split str ch)
+  (let for ((l0 0) (l1 0) (acc '()))
+    (cond
+     ((>= l1 (string-length str))
+      (reverse (cons (substring str l0 l1) acc)))
+     ((char=? (string-ref str l1) ch)
+      (for (+ 1 l1) (+ 1 l1) (cons (substring str l0 l1) acc)))
+     (else
+      (for l0 (+ 1 l1) acc)))))
+
+(define-regexp octet "((2[0-5][0-9]|1[0-9][0-9]|[0-9][0-9]|[0-9])\\.){3}(2[0-5][0-9]|1[0-9][0-9]|[0-9][0-9]|[0-9])")
 
 (define-parser (ipv4)
-  (>> (<- bs (ipv4-list))
-      (return `(ip 4 ,@bs))))
+  (>> (<- v (octet))
+      (return `(ip4 ,@(map string->number (string-split v #\.))))))
+
+;; (define-parser (hostname)
+;;   (>> (<- cs (kleene (parser ()
+;;                              (<> (unreserved)
+;;                                  (pct-encoded)
+;;                                  (sub-delims)))))
+;;       (return (list->string cs))))
+
+;; (define-regexp re-hostname "([a-zA-Z]|[0-9]|\\-|\\.|\\_|\\~|%[0-9a-fA-F]{2}|[!$&\\'\\(\\)\\*\\+\\,\\;=])*")
+
+(define-regexp re-hostname  "([a-zA-Z0-9!$&',;=\\-\\.\\_\\~\\(\\)\\*\\+]|%[0-9a-fA-F]{2})*")
 
 (define-parser (hostname)
-  (>> (<- cs (kleene (parser ()
-                             (<> (unreserved)
-                                 (pct-encoded)
-                                 (sub-delims)))))
-      (return (list->string cs))))
+  (>> (<- name (re-hostname))
+      (return (pct-decode name))))
 
 (define-parser (host)
   (<> (ipv4)
       (hostname)))
 
 (define-parser (authority)
-  (>> (<- ui (maybe (parser ()
-                            (>> (<- u (userinfo))
-                                (char #\@)
-                                (return u)))))
+  (>> (<- ui (maybe (>> (<- u (userinfo))
+                        (char #\@)
+                        (return u))))
       (<- h (host))
-      (<- n (maybe (parser ()
-                           (>> (char #\:)
-                               (port)))))
+      (<- n (maybe (>> (char #\:) (port))))
       (return (append
                (if (null? ui) '() `((userinfo ,@ui)))
                `((host ,@h))
                (if (null? n) '() `((port ,@n)))))))
 
-(define-parser (pchar)
-  (<> (unreserved)
-      (pct-encoded)
-      (sub-delims)
-      (char #\@)
-      (char #\:)))
+;; (define-regexp re-segment "([a-zA-Z0-9]|\\-|\\.|_|\\~|%[0-9a-fA-F]{2}|!|$|&|'|\\(|\\)|\\*|\\+|,|;|=)*")
+
+(define-regexp re-segment "([a-zA-Z0-9\\-\\.\\_\\~!$&'\\(\\)\\*\\+,;=]|%[0-9a-fA-F]{2})*")
 
 (define-parser (segment)
-  (>> (<- cs (kleene pchar))
-      (return (list->string cs))))
+  (>> (<- r (re-segment))
+      (return (string->symbol (pct-decode r)))))
+
+;; (define-regexp re-segment-nz "([a-zA-Z0-9]|\\-|\\.|_|\\~|%[0-9a-fA-F]{2}|!|$|&|'|\\(|\\)|\\*|\\+|,|;|=)+")
+
+(define-regexp re-segment-nz "([a-zA-Z0-9\\-\\.\\_\\~!$&'\\(\\)\\*\\+,;=]|%[0-9a-fA-F]{2})+")
 
 (define-parser (segment-nz)
-  (>> (<- c (pchar))
-      (<- cs (kleene pchar))
-      (return (list->string (cons c cs)))))
+  (>> (<- r (re-segment-nz))
+      (return (string->symbol (pct-decode r)))))
   
+(define-regexp re-segment-nz-nc "([a-zA-Z0-9\\-\\.\\_\\~!$&'\\(\\)\\*\\+,;=:]|%[0-9a-fA-F]{2})+")
+
 (define-parser (segment-nz-nc)
-  (>> (<- c (<> (pchar) (char #\:)))
-      (<- cs (kleene (parser ()
-                             (<> (pchar)
-                                 (char #\:)))))
-      (return (list->string (cons c cs)))))
+  (>> (<- r (re-segment-nz-nc)) 
+      (return (string->symbol (pct-decode r)))))
 
 (define-parser (path-abempty)
   (<> (>> (char #\/)
@@ -221,35 +203,25 @@
       (path-noscheme)
       (path-rootless)
       (return '())))
-                                        ;                 (path-empty)))))
+
+(define-regexp re-query "[a-zA-Z0-9\\-\\.\\_\\~!$&\\'\\(\\)\\*\\+\\,\\;=%@\\/\\?]*")
 
 (define-parser (query)
-  (<>  (>> (char #\?)
-           (<- cs  (kleene (parser ()
-                           (<> (unreserved)
-                               (sub-delims)
-                               (char #\%)
-                               (char #\@)
-                               (char #\/)
-                               (char #\?)))))
-           (return (list->string cs)))
-       (return "")))
+  (<> (>> (char #\?) (re-query))
+      (return "")))
+
+(define-regexp re-fragment "([a-zA-Z0-9\\-\\.\\_\\~!$&\\'\\(\\)\\*\\+,;=\\/\\?]|%[0-9a-fA-F]{2})*")
 
 (define-parser (fragment)
   (maybe
-   (parser ()
-    (>> (char #\#)
-        (<- cs (kleene (parser ()
-                        (<> (pchar)
-                            (char #\/)
-                            (char #\?)))))
-        (return (list->string cs))))))
+   (>> (char #\#)
+       (<- cs (re-fragment))
+       (return (pct-decode cs)))))
 
 (define-parser (absolute)
   (>> (<- s (scheme))
       (char #\:)
-      (<> (>> (char #\/)
-              (char #\/)
+      (<> (>> (regexp "//")
               (<- a  (authority))
               (<- pa (path-abempty))
               (<- q  (query))
@@ -263,8 +235,7 @@
               (return (make-uri s '() pa q f))))))
 
 (define-parser (relative)
-  (<> (>> (char #\/)
-          (char #\/)
+  (<> (>> (regexp "//")
           (<- a  (authority))
           (<- pa (path-abempty))
           (<- q  (query))
@@ -280,6 +251,8 @@
 (define-parser (rfc3986)
   (<> (absolute)
       (relative)))
+
+(declare (safe))
 
 (define (string->uri s)
   (run (rfc3986) s))

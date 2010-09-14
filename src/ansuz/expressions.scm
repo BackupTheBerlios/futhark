@@ -1,20 +1,25 @@
 (##namespace ("ansuz-expressions#"))
-
 (##include "~~/lib/gambit#.scm")
 
-(include "language#.scm")
+(include "reflect#.scm")
+(include "monad#.scm")
+(include "orelse#.scm")
 (include "kernel#.scm")
+(include "language#.scm")
 
 (declare
  (standard-bindings)
  (extended-bindings)
  (block)
- ;; (not safe)
+ ;;(not safe)
  )
 
-(define-structure operator-table prefix infix postfix)
+(define-structure operator-table
+  (prefix read-only: unprintable:)
+  (infix read-only: unprintable:)
+  (postfix read-only: unprintable:))
 
-(define-structure result precedence function associativity)
+(define-structure result macros: precedence function associativity)
 
 (define-parser (prefix ot)
   (prefix* (operator-table-prefix ot)))
@@ -34,7 +39,7 @@
 
 (define-parser (infix* ts)
   (if (null? ts) (fail "infix failed")
-      (let(
+     (let(
            (pars (caar ts))
            (prec (cadar ts))
            (assc (caddar ts)))

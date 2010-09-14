@@ -5,13 +5,11 @@
 (include "json#.scm")
 
 (include "../encode/base64#.scm")
-(include "../utils/uids#.scm")
+(include "../encode/uids#.scm")
 (include "../ehwas/request#.scm")
 (include "../ehwas/response#.scm")
-(include "../ehwas/resolver#.scm")
-
-(include "../ansuz/language#.scm")
-;; (include "rfc3986#.scm")
+(include "../ehwas/combinators#.scm")
+(include "../ehwas/query#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
@@ -287,19 +285,19 @@
              (list char-encoding: 'UTF-8)
              (lambda (p)
                (json-write val p pid->json)))))
-    (make-response
+    (response
      (request-version req) 200 "OK"
      (header
-      ("Pragma" "no-cache")
-      ("Cache-Control" "no-cache, must revalidate")
-      ("Expires:" "-1")
-      ("Access-Control-Allow-Origin" (table-ref (request-header req) "Origin" "*"))
-      ("Vary" "Accept-Encoding")
-      ("Content-Type" "application/json; charset=UTF-8")
-      ("Char-Encoding" "utf-8")
-      ("Content-Length" (u8vector-length str)))
-     (lambda (p)
-       (write-subu8vector str 0 (u8vector-length str) p)))))
+      Pragma: "no-cache"
+      Cache-Control: "no-cache, must revalidate"
+      Expires: "-1"
+      ;; Access-Control-Allow-Origin: (table-ref (request-header req) "Origin" "*")
+      ;; Vary: "Accept-Encoding"
+      Content-Type: "application/json; charset=UTF-8"
+      ;; Content-Type: "text/plain"
+      Char-Encoding: "utf-8"
+      Content-Length: (u8vector-length str))
+     (write-subu8vector str 0 (u8vector-length str)))))
 
 
 ;; (define (get-query req)
@@ -314,18 +312,16 @@
     (json-response req uid)))
 
 (define (gebo-listen req)
-  (call-with-request
-   req
-   (lambda ()
-     (let(
-          (mb (uid->mailbox (table-ref (query) "uid" ""))))
-       (thread-send mb 'free)
-       (thread-send mb `(get ,(current-thread)))
-       (let*(
-             (q (thread-receive))
-             (res (json-response req q)))
-         (thread-send mb 'pawn)
-         res)))))
+  (let*(
+        (query (request-query req))
+        (mb (uid->mailbox (table-ref query 'uid ""))))
+    (thread-send mb 'free)
+    (thread-send mb `(get ,(current-thread)))
+    (let*(
+          (q (thread-receive))
+          (res (json-response req q)))
+      (thread-send mb 'pawn)
+      res)))
    
 ;; (define (gebo-notify req)
 ;;   (let*(
@@ -357,50 +353,36 @@
   (for-each
    (lambda (m)
      (gebo-send (table-ref m "P") (table-ref m "M")))
-   (json-read (request-port req) json->pid))
+   (json-read (current-input-port) json->pid))
   (json-response req #t))
 
-(include "rts.scm")
-
-(define (gebo-rts req)
-  (make-response
-   (request-version req) 200 "OK"
-   (header    
-    ("Content-Type" "text/javascript")
-    ("Content-Length" *-rts-size-*))
-   (lambda (p)
-     (write-subu8vector *-rts-data-* 0 *-rts-size-* p))))
-
 (define (gebo-options req)
-  (make-response
+  (response
    (request-version req) 200 "OK"
    (header
-    ("Access-Control-Allow-Origin" (table-ref (request-header req) "Origin" ""))
-    ("Access-Control-Allow-Methods" "POST, GET, OPTIONS")
-    ("Access-Control-Allow-Headers" (table-ref (request-header req) "Access-Control-Request-Headers" ""))
-    ("Access-Control-Max-Age" "1728000")
-    ("Vary" "Accept-Encoding")
-    ("Content-Length" 0))
-   (lambda (p) #f)))
+    Access-Control-Allow-Origin: (table-ref (request-header req) "Origin" "")
+    Access-Control-Allow-Methods: "POST, GET, OPTIONS"
+    Access-Control-Allow-Headers: (table-ref (request-header req) "Access-Control-Request-Headers" "")
+    Access-Control-Max-Age: 1728000
+    Vary: "Accept-Encoding"
+    Content-Length: 0)
+   ""))
 
 (define (gebo-resolver req)
   (let(
        (path (request-path req)))
     (cond
-     ((string=? (request-method req) "OPTIONS")
+     ((eq? (request-method req) 'OPTIONS)
       (gebo-options req))
      
-     ((equal? path '("gebo" "uid"))
+     ((equal? path '(gebo uid))
       (gebo-uid req))
      
-     ((equal? path '("gebo" "listen"))
+     ((equal? path '(gebo listen))
       (gebo-listen req))
      
-     ((equal? path '("gebo" "notify"))
+     ((equal? path '(gebo notify))
       (gebo-notify req))
-     
-     ((equal? path '("gebo" "rts.js"))
-      (gebo-rts req))
      
      (else #f))))
 
@@ -444,3 +426,21 @@
    (else
     (raise `("wrong address type" ,to)))))
 
+
+(define (websocket-gebo-reader)
+  (for-each (lambda (m) (gebo-send (table-ref m "P") (table-ref m "M")))
+            (websocket-read)))
+
+(define (websocket-gebo-writer)
+  (websocket-write (recv))
+  (websocket-gebo-writer))
+    
+(define (websocket-gebo request)
+  (parameterize
+      ((websocket-reader (lambda (p) (json-read p json->pid)))
+       (websocket-writer (lambda (val p) (json-write val p pid->json))))
+    (let(
+         (uid (make-uid)))
+      (websocket-write uid)
+      (websocket-gebo-reader)
+      (websocket-gebo-writer))))
