@@ -65,7 +65,7 @@
                (a (table-ref query "action" #f)))
             (cond
              ((not a)
-              (make-javascript-response (request-version r) "OK" 200 full))
+              (make-javascript-response (request-version r) 200 "OK" full))
              ((string=? a "code")
              (let (
                    (t (table-ref query "type")))

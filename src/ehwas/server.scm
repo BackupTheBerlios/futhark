@@ -18,7 +18,7 @@
        (handler (lambda ()
                   (with-exception-catcher
                    (lambda (ex)
-                     ;; (pp ex)
+                     ;;(pp ex)
                      '(error 500))
                    (lambda () 
                      (write-http-response (handler (read-http-request))))))))
