@@ -1,9 +1,8 @@
-To test this:
 
 Download and install Gambit-C scheme System.
 at <http://dynamo.iro.umontreal.ca/~gambit/wiki/index.php/Main_Page>
 
-to install run gsi make/install (you have to have write access to main Gambit-C directory)
+to install FUTHARK run gsi make/install (you have to have write access to main Gambit-C directory)
 
 run tests in test directory see test/README (futhark should be installed)
 
@@ -17,3 +16,5 @@ to be able to load ehwas/w3c-logger you have to compile it
 
 > cd /usr/local/Gambit-C/current/site-scheme/futhark/ehwas
 > gsc w3c-logger
+
+francesco bracchi <frbracch@gmail.com>
