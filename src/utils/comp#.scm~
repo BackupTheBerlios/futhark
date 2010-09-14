@@ -1,7 +1,0 @@
-(##namespace
- ("utils-comp#"
-  prefix
-  object-extension
-
-  cf
-  ))

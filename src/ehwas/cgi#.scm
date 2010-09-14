@@ -1,1 +1,0 @@
-(namespace ("ehwas-cgi#" cgi-resolver))

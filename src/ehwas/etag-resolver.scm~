@@ -1,9 +1,0 @@
-(##namespace ("ehwas-etag-resolver#"))
-
-
-(##include "~~/lib/gambit#.scm")
-
-(include "response#.scm")
-(include "request#.scm")
-(include "resolver#.scm")
-
