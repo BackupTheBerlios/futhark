@@ -73,22 +73,49 @@
            (cdr rs)
            (cons (cons k (caar rs)) as)))))))
 
+;; (define (set-union as bs)
+;;   (if (null? bs) as
+;;       (let(
+;;            (b (car bs))
+;;            (bs (cdr bs)))
+;;         (let coalesce ((lo (car b))
+;;                        (hi (cdr b))
+;;                        (as as)
+;;                        (rs '()))
+;;           (if (null? as) `((,lo . ,hi) ,@(reverse rs))
+;;               (let*(
+;;                     (a (car as))
+;;                     (loa (car a))
+;;                     (hia (cdr a)))
+;;                 (pp `(coal (min ,lo ,loa) (max ,hi ,hia)))
+;;                 (if (or (and (>= lo loa) (<= lo hia))
+;;                         (and (<= hi hia) (>= hi loa)))
+;;                     (coalesce (min lo loa) (max hi hia) (cdr as) rs)
+;;                     (coalesce lo hi (cdr as) (cons (car as) rs)))))))))
+
 (define (set-union as bs)
-  (if (null? bs) as
-      (let(
-           (b (car bs))
-           (bs (cdr bs)))
-        (let coalesce ((lo (car b))
-                       (hi (cdr b))
-                       (as as)
-                       (rs '()))
-          (if (null? as) `((,lo . ,hi) ,@(reverse rs))
-              (let*(
-                    (a (car as))
-                    (loa (car a))
-                    (hia (cdr a)))
-                (if (or (and (>= lo loa) (<= lo hia))
-                        (and (<= hi hia) (>= hi loa)))
-                    (coalesce (min lo loa) (max hi hia) (cdr as) rs)
-                    (coalesce lo hi (cdr as) (cons (car as) rs)))))))))
+  (if (null? as) bs
+      (set-union (cdr as) (coalesce-interval (car as) bs))))
+
+(define (coalesce-interval a bs)
+  (cond
+   ((null? bs) (list a))
+   ((particle-coalesce? a (car bs)) =>
+    (lambda (p1) (coalesce-interval p1 (cdr bs))))
+   ((<= (car a) (caar bs))
+    (cons a bs))
+   (else
+    (cons (car bs) (coalesce-interval a (cdr bs))))))
+
+(define (particle-coalesce? a b)
+  (let(
+       (loa (car a))
+       (hia (cdr a))
+       (lob (car b))
+       (hib (cdr b)))
+    (and (or (and (>= loa lob) (<= loa hib)) (and (<= hia hib) (>= hia lob)))
+         (cons (min loa lob) (max hia hib)))))
+   
+
+   
 
