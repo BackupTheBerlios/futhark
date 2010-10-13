@@ -31,47 +31,44 @@
   (lambda (req)
     (let(
          (res (resolver req)))
-      (if (not res) #f
+      (if (not (response? res)) #f
           (let*(
-                (accepted (split (table-ref (request-header req) "Accept-Encoding" "")))
-                (version (response-version res))
+                (accepted (split (table-ref (request-header req) 'Accept-Encoding "")))
                 (code (response-code res))
                 (status (response-status res))
                 (headers (response-header res)))
             (cond
              ((member "gzip" accepted)
-              (table-set! headers "Content-encoding" "gzip")
-              (response
-               version code status headers
-               (lambda ()
-                 (let*(
-                       (clear
-                        (with-output-to-u8vector
-                         (u8vector)
-                         (response-writer res)))
-                       (compressed
-                        (gzip-u8vector clear)))
-                   (write-subu8vector compressed 0 (u8vector-length compressed))))))
+              ;;(table-set! headers Content-encoding: "gzip")
+              (make-response code status
+			     (cons '(Content-encoding . "gzip") headers)
+			     (lambda ()
+			       (let*(
+				     (clear
+				      (with-output-to-u8vector
+				       (u8vector)
+				       (response-writer res)))
+				     (compressed
+				      (gzip-u8vector clear)))
+				 (write-subu8vector compressed 0 (u8vector-length compressed))))))
              
              ((member "deflate" accepted)
-              (table-set! headers "Content-encoding" "deflate")
-              (response
-               version code status headers
-               (lambda ()
-                 (let*(
-                       (clear
-                        (with-output-to-u8vector
-                         (u8vector)
-                         (response-writer res)))
-                       (compressed
-                        (deflate-u8vector clear)))
-                   (write-subu8vector compressed 0 (u8vector-length compressed))))))
+              ;; (table-set! headers Content-encoding: "deflate")
+              (response code status (cons '(Content-encoding . "deflate") headers)
+			(let*(
+			      (clear
+			       (with-output-to-u8vector
+				(u8vector)
+				(response-writer res)))
+			      (compressed
+			       (deflate-u8vector clear)))
+			  (write-subu8vector compressed 0 (u8vector-length compressed)))))
              (else
               res)))))))
 
 (define (can-compress req)
-  (let*(
-        (accepted (split (table-ref (request-header req) "Accept-Encoding" ""))))
+  (let(
+       (accepted (split (table-ref (request-header req) 'Accept-Encoding ""))))
     (or (member "gzip" accepted)
         (member "deflate" accepted))))
 

@@ -22,7 +22,7 @@
                       (cs (if atr? (cddr e) (cdr e))))
                   (list
                    "<" xn
-		   (map (lambda (a) (list (symbol->string (car a)) "=\"" (ssgml (cadr a)) "\"")) as)
+		   (map (lambda (a) (list " " (symbol->string (car a)) "=\"" (ssgml (cadr a)) "\"")) as)
                    (cond
                     ((member n empty) ">")
                     ((null? cs) "/>")

@@ -13,15 +13,37 @@
 
 (define current-http-port (make-parameter #f))
 
+;; (define (http-server handler #!key (secure #f))
+;;   (let(
+;;        (handler (lambda ()
+;;                   (with-exception-catcher
+;;                    (lambda (ex)
+;;                      (pp ex)
+;;                      '(error 500))
+;;                    (lambda () 
+;;                      (write-http-response (handler (read-http-request))))))))
+;;     (if secure
+;;         (secure-http-server handler)
+;;         (clear-http-server handler))))
+
 (define (http-server handler #!key (secure #f))
   (let(
        (handler (lambda ()
                   (with-exception-catcher
                    (lambda (ex)
-                     ;;(pp ex)
-                     '(error 500))
-                   (lambda () 
-                     (write-http-response (handler (read-http-request))))))))
+                     ;; (pp ex)
+                     '(*IGNORE*))
+                   (lambda ()
+                     (let repeat ()
+                       (let*(
+                             (req (read-http-request))
+                             (res (handler req)))
+                         (if (response? res) (write-http-response res))
+                         (if (and (equal? (request-version req) '(1 . 1))
+                                  (equal? (table-ref (request-header req) 'Connection #f) "Keep-Alive")
+                                  (not (and (response? res) (equal? (table-ref (response-header res) 'Connection #f) "Close"))))
+                             (repeat))
+                         )))))))
     (if secure
         (secure-http-server handler)
         (clear-http-server handler))))

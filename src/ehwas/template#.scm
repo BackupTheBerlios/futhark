@@ -1,6 +1,6 @@
 (##namespace ("ehwas-template#" sgml-template html-template xml-template svg-template xhtml-template))
 
-(define-macro (sgml-template #!key (empty '()) . e)
+(define-macro (sgml-template #!key (empty '()) . e)o
   (list
    'quasiquote
    (letrec(

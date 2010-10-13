@@ -30,5 +30,5 @@
               ((keyword? (car ps)) (loop (cddr ps) (cons `(cons ,(keyword->string (car ps)) ,(cadr ps)) rs)))
               (else (error "wrong response header format" ps))))))
 
-(define-macro (response v c s h . w)
+(define-macro (response c s h . w)
   `(make-response ,c ,s ,h (lambda () ,@w)))

@@ -25,11 +25,10 @@
 (define-structure response code status header writer)
 
 (define (write-http-response response #!optional (port (current-output-port)))
-  (and (response? response)
-       (let(
-            (display* (lambda (x) (display x port))))
-         (for-each display* (list (response-version) " " (response-code response) " " (response-status response) "\n"))
-         (for-each (lambda (pair) (for-each display* (list (car pair) ": " (cdr pair) "\n"))) (response-header response))
-         (newline port)
-         (parameterize ((current-output-port port)) ((response-writer response))))))
+  (let(
+       (display* (lambda (x) (display x port))))
+    (for-each display* (list (response-version) " " (response-code response) " " (response-status response) "\n"))
+    (for-each (lambda (pair) (for-each display* (list (car pair) ": " (cdr pair) "\n"))) (response-header response))
+    (newline port)
+    (parameterize ((current-output-port port)) ((response-writer response))))))
 
