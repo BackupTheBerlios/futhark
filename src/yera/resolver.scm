@@ -65,28 +65,28 @@
                (a (table-ref query "action" #f)))
             (cond
              ((not a)
-              (make-javascript-response (request-version r) 200 "OK" full))
+              (make-javascript-response 200 "OK" full))
              ((string=? a "code")
              (let (
                    (t (table-ref query "type")))
                (cond
                 ((not t) (raise "type not found"))
                 ((string=? t "yera")
-                 (make-source-response (request-version r) 200 "OK" full))
+                 (make-source-response 200 "OK" full))
                 ((string=? t "bytecode")
-                 (make-bytecode-response (request-version r) 200 "OK" full))
+                 (make-bytecode-response 200 "OK" full))
                 ((string=? t "ecmascript")
-                 (make-javascript-response (request-version r) 200 "OK" full))
+                 (make-javascript-response 200 "OK" full))
                 (else (error (string-append "type " t " not available"))))))
              (else (error (string-append "action " a  " not available")))))))
        (else #f)))))
 
-(define (make-source-response v c s full)
+(define (make-source-response c s full)
   (let(
        (buffer (make-u8vector buffer-size))
        (size (file-size full)))
     (response
-     v c s
+     c s
      (header
       Content-Type: "text/plain"
       Content-Length: size
@@ -100,7 +100,7 @@
                  (write-subu8vector buffer 0 delta)
                  (loop (+ j delta))))))))))
 
-(define (make-bytecode-response v c s full)
+(define (make-bytecode-response c s full)
   (let(
        (str (call-with-output-u8vector
              (u8vector)
@@ -109,7 +109,7 @@
                  (lambda (in)
                    (yerabc (path-directory full) in out)))))))
     (response
-     v c s
+     c s
      (header
       Content-Type: "text/plain"
       Content-Length: (u8vector-length str)
@@ -117,7 +117,7 @@
      (write-subu8vector str 0 (u8vector-length str)))))
 
   
-(define (make-javascript-response v c s full)
+(define (make-javascript-response c s full)
   (let(
        (str (call-with-output-u8vector
              (u8vector)
@@ -126,7 +126,7 @@
                  (lambda (in)
                    (yerac (path-directory full) in out)))))))
     (response
-     v c s
+     c s
      (header
       Content-Type: "text/ecmascript"
       Content-Length: (u8vector-length str)
