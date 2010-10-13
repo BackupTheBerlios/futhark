@@ -20,15 +20,19 @@
          ;; (not safe)
          (block))
 
-(define response-version (make-parameter "HTTP/1.1"))
+(define response-version (make-parameter '(1 . 1)))
+;; (define response-version (make-parameter "HTTP/1.1"))
 
 (define-structure response code status header writer)
 
 (define (write-http-response response #!optional (port (current-output-port)))
   (let(
        (display* (lambda (x) (display x port))))
-    (for-each display* (list (response-version) " " (response-code response) " " (response-status response) "\n"))
+    (for-each display* (list "HTTP/" 
+			     (car (response-version)) "." (cdr (response-version))
+			     " " (response-code response) 
+			     " " (response-status response) "\n"))
     (for-each (lambda (pair) (for-each display* (list (car pair) ": " (cdr pair) "\n"))) (response-header response))
     (newline port)
-    (parameterize ((current-output-port port)) ((response-writer response))))))
+    (parameterize ((current-output-port port)) ((response-writer response)))))
 

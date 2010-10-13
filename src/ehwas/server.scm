@@ -35,15 +35,18 @@
                      '(*IGNORE*))
                    (lambda ()
                      (let repeat ()
-                       (let*(
-                             (req (read-http-request))
-                             (res (handler req)))
-                         (if (response? res) (write-http-response res))
-                         (if (and (equal? (request-version req) '(1 . 1))
-                                  (equal? (table-ref (request-header req) 'Connection #f) "Keep-Alive")
-                                  (not (and (response? res) (equal? (table-ref (response-header res) 'Connection #f) "Close"))))
-                             (repeat))
-                         )))))))
+                       (let(
+			    (req (read-http-request)))
+			 (parameterize 
+			  ((response-version (request-version req)))
+			  (let(
+			       (res (handler req)))
+			    (if (response? res) (write-http-response res))
+			    (if (and (equal? (request-version req) '(1 . 1))
+				     (equal? (table-ref (request-header req) 'Connection #f) "Keep-Alive")
+				     (not (and (response? res) (equal? (table-ref (response-header res) 'Connection #f) "Close"))))
+				(repeat))
+			    )))))))))
     (if secure
         (secure-http-server handler)
         (clear-http-server handler))))
