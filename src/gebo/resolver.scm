@@ -286,7 +286,7 @@
              (lambda (p)
                (json-write val p pid->json)))))
     (response
-     (request-version req) 200 "OK"
+     200 "OK"
      (header
       Pragma: "no-cache"
       Cache-Control: "no-cache, must revalidate"
