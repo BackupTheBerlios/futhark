@@ -48,38 +48,36 @@
        (eq? (file-type f) 'regular)))
 
 (define (filesystem root #!key (buffer-size 16384))
-  (let(
-       (cache (make-table weak-values: #t test: equal?)))
-    (lambda (request)
-      (let*(
-            (local-path (map (lambda (t) (string-append "/" (symbol->string t))) (request-path request)))
-            (path (apply string-append (cons root local-path))))
-        (and (file-exists? path)
-             (eq? (file-type path) 'regular)
-             (let(
-                  (buffer (make-u8vector buffer-size))
-                  (size (file-size path))
-                  (etag (number->string
-                         (time->seconds
-                          (file-last-modification-time path))))
-                  (if-none-match (table-ref (request-header request) 'If-None-Match #f)))
-               (if (equal? etag if-none-match)
-                   (make-response 304 "Not Modified" (header) (lambda () 'ok))
-                   (make-response
-                    200 "OK"
-                    (header
-                     Content-type: (mime-type path)
-                     Content-length: size
-                     Etag: etag)
-                    (lambda ()
-                      (call-with-input-file path
-                        (lambda (port)
-                          (let buffer-write ((j 0))
-                            (if (< j size)
-                               (let(
-                                    (delta (read-subu8vector buffer 0 buffer-size port)))
-                                 (write-subu8vector buffer 0 delta)
-                                 (buffer-write (+ j delta))))))))))))))))
+  (lambda (request)
+    (let*(
+	  (local-path (map (lambda (t) (string-append "/" (symbol->string t))) (request-path request)))
+	  (path (apply string-append (cons root local-path))))
+      (and (file-exists? path)
+	   (eq? (file-type path) 'regular)
+	   (let(
+		(buffer (make-u8vector buffer-size))
+		(size (file-size path))
+		(etag (number->string
+		       (time->seconds
+			(file-last-modification-time path))))
+		(if-none-match (table-ref (request-header request) 'If-None-Match #f)))
+	     (if (equal? etag if-none-match)
+		 (make-response 304 "Not Modified" (header) (lambda () 'ok))
+		 (make-response
+		  200 "OK"
+		  (header
+		   Content-type: (mime-type path)
+		   Content-length: size
+		   Etag: etag)
+		  (lambda ()
+		    (call-with-input-file path
+		      (lambda (port)
+			(let buffer-write ((j 0))
+			  (if (< j size)
+			      (let(
+				   (delta (read-subu8vector buffer 0 buffer-size port)))
+				(write-subu8vector buffer 0 delta)
+				(buffer-write (+ j delta)))))))))))))))
 
 (define (with-table table)
   (lambda (request)
