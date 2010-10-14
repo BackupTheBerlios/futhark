@@ -4,7 +4,7 @@
 
 (include "response#.scm")
 (include "request#.scm")
-(include "template#.scm")
+(include "sxml-template#.scm")
 (include "errors#.scm")
 
 (##include "~~/lib/gambit#.scm")
@@ -16,14 +16,14 @@
 
 (define *default-errors* (make-table test: =))
 
-(define-macro (define-default-for-error code status)
+(define-macro (define-default-for-error kode status)
   (let(
-       (body (gensym 'body))
-       (req (gensym 'req)))
-    `(define-default-error-handler ,code
-       (lambda (,req #!key exception continuation)
+       (code (gensym 'code))
+       (data (gensym 'data)))
+    `(define-default-error-handler ,kode
+       (lambda (,code ,data)
          (response
-          (request-version ,req) ,code ,status
+          ,code ,status
           (header
            Pragma: "no-cache"
            Cache-Control: "no-cache, must revalidate"
@@ -31,13 +31,14 @@
            Content-type: "text/html")
           (print
            (html-template
-           "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
-           (html
-            (head (title "Webserver error " ,code))
-            (body
+	    "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
+	    (html
+	     (head (title ,(list 'unquote status) " " ,(list 'unquote code)))
+	     (body
              (center
-              (h1 "Web server error " ,code)
-              (h4 ,status)))))))))))
+              (h1 "Web server error " ,(list 'unquote code))
+	      (h5 ,(list 'unquote status))
+              (h4 ,(list 'unquote data))))))))))))
 
 (define-default-for-error 400 "Bad Request")
 (define-default-for-error 401 "Unauthorized Access")
@@ -75,9 +76,9 @@
      (display-continuation-backtrace k p))))
 
 (define-default-error-handler 500
-  (lambda (req #!key exception continuation)
+  (lambda (code data)
     (response
-     (request-version req) 500 "Internal Server Error"
+      500 "Internal Server Error"
      (header
       Pragma: "no-cache"
       Cache-Control: "no-cache, must revalidate"
@@ -93,19 +94,12 @@
          (center
           (h1 "Webserver error " 500)
           (h2 (@ (style "align:left")) 
-              ,(call-with-output-string
-                ""
-                (lambda (p)
-                  (print
-                   port: p
-                   (html-template
-                    (h4 ,(string->html (exception->string exception continuation)))
-                    (h5 "In:")
-                    (textarea (@ (cols "80") (rows "10") (readonly "true")) ,(backtrace->string continuation)))))))))))))))
+	      (h4 "Internal Server Error")
+	      (textarea (@ (cols "80") (rows "10") (readonly "true")) ,data))))))))))
 
 
-(define (default-handler req code #!key (exception #f) (continuation #f))
-  ((table-ref *default-errors* code) req exception: exception continuation: continuation))
+(define (default-handler code data)
+  ((table-ref *default-errors* code) code data))
 
 ;; (define (with-error-handler handler res)
 ;;   (lambda (req)
@@ -117,19 +111,23 @@
 ;;          (lambda () (res req)))
 ;;         (handler req 404))))
 
-(define (with-error-handler handler res)
+(define (with-error-handler error-handler request-handler)
   (lambda (req)
     (let(
-         (kont #f))
-      (or (with-exception-catcher
-           (lambda (e)
-             (handler req 500 exception: e continuation: kont))
-           (lambda ()
-             (continuation-capture
-              (lambda (k)
-                (set! kont k)
-                (res req)))))
-          (handler req 404)))))
+	 (eh (current-exception-handler)))
+      (or (with-exception-handler
+	   (lambda (e)
+	     (continuation-capture
+	      (lambda (kont)
+		(with-exception-catcher 
+		 (lambda (ex) (pp `(ex ,ex)))
+		 (lambda ()
+		   (error-handler 500 (string-append
+				       (exception->string e kont)
+				       "\n"
+				       (backtrace->string kont))))))))
+	   (lambda () (request-handler req)))
+	  (error-handler 404 "")))))
 
-(define (with-default-error-handler res)
-  (with-error-handler default-handler res))
+(define (with-default-error-handler handler)
+  (with-error-handler default-handler handler))
