@@ -12,27 +12,12 @@
          (block))
 
 (define current-http-port (make-parameter #f))
-
-;; (define (http-server handler #!key (secure #f))
-;;   (let(
-;;        (handler (lambda ()
-;;                   (with-exception-catcher
-;;                    (lambda (ex)
-;;                      (pp ex)
-;;                      '(error 500))
-;;                    (lambda () 
-;;                      (write-http-response (handler (read-http-request))))))))
-;;     (if secure
-;;         (secure-http-server handler)
-;;         (clear-http-server handler))))
-
+	   
 (define (http-server handler #!key (secure #f))
   (let(
        (handler (lambda ()
                   (with-exception-catcher
-                   (lambda (ex)
-                     ;; (pp ex)
-                     '(*IGNORE*))
+		   (lambda (ex) (pp ex) 'ignore)
                    (lambda ()
                      (let repeat ()
                        (let(
