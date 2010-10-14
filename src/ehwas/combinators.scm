@@ -28,21 +28,27 @@
 
 (define (cache handler)
   (let(
-       (cache (make-table weak-values: #t test: equal?)))
-    (lambda (request)
+       (*cache* (make-table weak-values: #t test: equal?)))
+    (lambda (req)
+      (with-exception-catcher pp (lambda () 
       (let(
-           (key (request-uri-string request)))
-        (or (table-ref cache key)
+           (key (request-uri-string req)))
+        (or (table-ref *cache* key #f)
             (let(
-                 (response (handler request)))
-              (if (and (response? response) (equal? (response-code response) 200))
+                 (res (handler req)))
+              (if (and (response? res) (equal? (response-code res) 200))
                   (let*(
-                        (data (call-with-output-u8vector (lambda (p) (parameterize ((current-output-port p)) (response-writer)))))
-                        (response (make-response 200 "OK" (response-header response) (lambda () (write-subu8vector data 0 (u8vector-length data))))))
-                    (table-set! cache key response)
-                    response)
-                  response)))))))
-
+                        (data (with-output-to-u8vector
+			       (u8vector)
+			       (response-writer res)))
+			(res (make-response
+			      200 "OK" 
+			      `(("Content-length" . ,(u8vector-length data)) ,@(response-header res))
+			      (lambda () (write-subu8vector data 0 (u8vector-length data))))))
+                    (table-set! *cache* key res)
+                    res)
+                  res)))))))
+))
 (define (regular-file? f)
   (and (file-exists? f)
        (eq? (file-type f) 'regular)))
