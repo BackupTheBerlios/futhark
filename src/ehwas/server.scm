@@ -17,7 +17,7 @@
   (let(
        (handler (lambda ()
                   (with-exception-catcher
-		   (lambda (ex) (pp ex) 'ignore)
+		   (lambda (ex) 'ignore)
                    (lambda ()
                      (let repeat ()
                        (let(
