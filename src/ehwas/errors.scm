@@ -115,12 +115,12 @@
   (lambda (req)
     (let(
 	 (eh (current-exception-handler)))
-      (or (with-exception-handler
+      (or (with-exception-catcher
 	   (lambda (e)
 	     (continuation-capture
 	      (lambda (kont)
 		(with-exception-catcher 
-		 (lambda (ex) (pp `(ex ,ex)))
+		 (lambda (ex) 'ignore)
 		 (lambda ()
 		   (error-handler 500 (string-append
 				       (exception->string e kont)
