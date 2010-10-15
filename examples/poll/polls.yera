@@ -1,0 +1,65 @@
+-- @author: francesco bracchi <frbracch@gmail.com>
+
+files "prelude.yera";
+
+ProgressBarI = interface (progressbar);
+
+ProgressBar = struct : ProgressBarI ->
+    open YeraCore, YeraDom, YeraMath, YeraHtml, YeraUtils;
+    files "progressbar.yera";
+end;
+
+ColorsI = interface (rgb, colorTrans, rgbToString);
+
+Colors = struct : ColorsI ->
+    open YeraCore, YeraMath;
+    files "colors.yera";
+end;
+
+ButtonsI = interface (button);
+
+Buttons = struct : ButtonsI ->
+    open YeraCore, YeraDom, YeraHtml, YeraMath, Colors, MouseEvents,
+         YeraUtils;
+    files "mouse_events@.yera", "buttons.yera";
+end;
+
+WaitI = interface (wait);
+
+Wait = 
+    struct : WaitI ->
+    open YeraCore, YeraDom, YeraHtml, YeraMath;
+    files "wait.yera";
+end;
+
+QueryI = interface (query, choice);
+
+Query = struct : QueryI ->
+   open YeraCore, YeraDom, YeraMath, YeraHtml, YeraUserevent, 
+        MouseEvents, Colors, YeraUtils, Buttons;
+
+   open Wait;
+   files "mouse_events@.yera", "query.yera";
+end;
+
+ResultI = interface (result);
+
+Result = struct : ResultI -> 
+    open YeraCore, YeraDom, YeraMath, YeraHtml, YeraUserevent,
+         YeraUtils, ProgressBar;
+    files "result.yera";
+end;
+
+Main = struct : (main) ->
+   open YeraCore, YeraDom, YeraMath, YeraUserevent,
+        YeraHtml, ProgressBar, YeraUtils,
+  Wait, Query, Result;
+  files "main.yera";
+end;
+
+
+Test = struct : (main) ->
+   open YeraCore, YeraDom, YeraMath, YeraUserevent,
+        YeraHtml, Query, Result;
+   files "test.yera";
+end;
