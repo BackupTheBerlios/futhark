@@ -4,7 +4,7 @@
 
 (include "resolver#.scm")
 
-(##include "~~/site-scheme/termite/termite#.scm")
+(##include "~~/lib/termite/termite#.scm")
 (##namespace ("gebo-termite#" ! !? on))
 
 (declare (standard-bindings)

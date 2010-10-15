@@ -1049,7 +1049,7 @@
                (decompress)))
 
   (set! crc32 (and gzip? (open-digest 'crc32)))
-
+  
   (receive (clnt srvr) (open-u8vector-pipe)
     (thread-start!
      (make-thread

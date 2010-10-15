@@ -18,7 +18,7 @@
   (macro-time-load "~~/site-scheme/futhark/ansuz/re/fsm")
   (macro-time-load "~~/site-scheme/futhark/ansuz/re/parser")
   (macro-time-load "~~/site-scheme/futhark/ansuz/re/cgen")
-  
+
   `(with-state ,x ,(fsm->code (run-monad (re)
                                          (stream e)
                                          (lambda v (car v))

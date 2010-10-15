@@ -22,8 +22,8 @@
 ;; that works correctly.
 ;; For deterministic parsers the incorrect orelse is sufficient to describe any
 ;; parser.
-;; orelse* is the theorical
-;; orelse is the pratical
+;; orelse* is the theorical (?)
+;; orelse is the pratical (?)
 
 (##namespace ("ansuz-orelse#" orelse orelse*))
 

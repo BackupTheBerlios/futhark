@@ -56,6 +56,7 @@
          b2))))))
 
 (define *max* (expt 2 16))
+
 (define all (list (cons 0 *max*)))
 
 (define (set-complement rs)

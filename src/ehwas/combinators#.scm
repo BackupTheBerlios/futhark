@@ -8,9 +8,12 @@
   with-prefix
   allow
   deny
+  redir
   redirect
   catch-exception
   paths
+  get?
+  post?
   ))
 
 (define-macro (paths . ls)
