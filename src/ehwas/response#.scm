@@ -13,22 +13,14 @@
   write-http-response
   ))
 
-;; ;; (define-macro (header . ps)
-;; ;;   (let(
-;; ;;        (m (gensym 'm)))
-;; ;;     `(let(
-;; ;;           (,m (make-table init: #f)))
-;; ;;        ,@(map (lambda (p)
-;; ;;                `(table-set! ,m ,(if (symbol? (car p)) (symbol->string (car p)) (car p)) ,(cadr p)))
-;; ;;               ps)
-;; ;;        ,m)))
-
 (define-macro (header . ps)
   `(list ,@(let loop ((ps ps) (rs '()))
-             (cond
-              ((null? ps) (reverse rs))
-              ((keyword? (car ps)) (loop (cddr ps) (cons `(cons ,(keyword->string (car ps)) ,(cadr ps)) rs)))
-              (else (error "wrong response header format" ps))))))
+	     (cond
+	      ((null? ps) (reverse rs))
+	      ((symbol? (car ps)) (loop (cddr ps) (cons `(cons ,(list 'quote (car ps)) ,(cadr ps)) rs)))
+	      ((string? (car ps)) (loop (cons (string->symbol (car ps)) (cdr ps)) rs))
+	      ((keyword? (car ps)) (loop (cons (keyword->string (car ps)) (cdr ps)) rs))
+	      (else (error "syntax error in header macro"))))))
 
 (define-macro (response c s h . w)
   `(make-response ,c ,s ,h (lambda () ,@w)))

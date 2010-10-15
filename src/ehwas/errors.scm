@@ -25,10 +25,10 @@
          (response
           ,code ,status
           (header
-           Pragma: "no-cache"
-           Cache-Control: "no-cache, must revalidate"
-           Expires: "-1"
-           Content-type: "text/html")
+           Pragma "no-cache"
+           Cache-Control "no-cache, must revalidate"
+           Expires "-1"
+           Content-type "text/html")
           (print
            (html-template
 	    "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
@@ -80,10 +80,10 @@
     (response
       500 "Internal Server Error"
      (header
-      Pragma: "no-cache"
-      Cache-Control: "no-cache, must revalidate"
-      Expires: "-1"
-      Content-type: "text/html")
+      Pragma "no-cache"
+      Cache-Control "no-cache, must revalidate"
+      Expires "-1"
+      Content-type "text/html")
      (print
       (html-template
        "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"

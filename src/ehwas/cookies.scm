@@ -69,8 +69,8 @@
 
 (define (make-request-cookies request)
   (let(
-       (str (table-ref (request-header request) "Cookie" #f)))
-    (and str (string->cookie str))))
+       (str (assq 'Cookie (request-header request))))
+    (and str (string->cookie (cdr str)))))
 
 (define *-memo-* (make-table weak-keys: #t))
 
@@ -87,13 +87,14 @@
         (fold (f i (car l)) (cdr l)))))
 
 (define (set-cookie! response k v . avs)
-  (table-set! (response-header response)
-              Set-Cookie:
-              (fold-left (lambda (p av)
-                           (cond
-                            ((pair? av)
-                             (string-append p ";" (car av) "=" (cdr av)))
-                            (else
-                             (string-append p av ";"))))
-                         (string-append k "=" v)
-                         avs)))
+  ;; todo what if Set-cookie already present?
+  (response-header-set!
+   `((Set-cookie . ,(fold-left (lambda (p av)
+				 (cond
+				  ((pair? av)
+				   (string-append p ";" (car av) "=" (cdr av)))
+				  (else
+				   (string-append p av ";"))))
+			       (string-append k "=" v)
+			       avs))
+     ,@(response-header response))))

@@ -44,8 +44,8 @@
           (read-subu8vector buffer 0 8 port)
           buffer))))
           
-(define websocket-reader (make-parameter #f))
-(define websocket-writer (make-parameter #f))
+(define websocket-reader (make-parameter (lambda (p) (read-line p #f))))
+(define websocket-writer (make-parameter (lambda  (d p) (display d p))))
 
 (define (websocket-read #!optional (port (current-input-port)))
   (let(
@@ -117,32 +117,34 @@
     (let(
          (headr (request-header req)))
       (and (eq? (request-method req) 'GET)
-           (table-ref headr 'Host #f)
-           (table-ref headr 'Origin #f)
-           (table-ref headr 'Sec-WebSocket-Key1 #f)
-           (table-ref headr 'Sec-WebSocket-Key2 #f)
-           (string=? (table-ref headr 'Connection "") "Upgrade")
-           (string=? (table-ref headr 'Upgrade "") "WebSocket")
+	   (assq headr 'Host)
+	   (assq headr 'Origin)
+	   (assq headr 'Sec-WebSocket-Key1)
+	   (assq headr 'Sec-WebSocket-Key2)
+	   (let(
+		(con (assq headr 'Connection)))
+	     (if con (equal? (cdr con) "Upgrade")))
+	   (let(
+		(ugr (assq headr 'Upgrade)))
+	     (if ugr (equal? (cdr ugr) "WebSocket")))
            (let*(
-                 (k1 (key->number (table-ref headr 'Sec-WebSocket-Key1)))
-                 (k2 (key->number (table-ref headr 'Sec-WebSocket-Key2)))
+                 (k1 (key->number (assq 'Sec-WebSocket-Key1 headr)))
+                 (k2 (key->number (assq'Sec-WebSocket-Key2 headr)))
                  (k3 (read-k3))
                  (challange (solve-challange k1 k2 k3)))
-             (make-response
-              (request-version req) 101 "WebSocket Protocol Handshake"
+             (response
+	      101 "WebSocket Protocol Handshake"
               (header
                Upgrade: "WebSocket"
                Connection: "Upgrade"
-               Sec-WebSocket-Origin: (table-ref headr 'Origin "")
-               Sec-WebSocket-Location: (string-append (if secure "wss" "ws") "://" (table-ref headr 'Host "") (path->string (request-path req)))
+               Sec-WebSocket-Origin: (assq headr 'Origin)
+               Sec-WebSocket-Location: (string-append (if secure "wss" "ws") "://" (assq 'Host headr) (path->string (request-path req)))
                Sec-WebSocket-Protocol: "gebo")
               (lambda (p)
                 (write-subu8vector challange 0 16 p)
                 (parameterize
                     ((current-input-port p)
-                     (current-output-port p)
-                     (websocket-reader (lambda (p) (read-line p #f)))
-                     (websocket-writer (lambda  (d p) (display d p))))
+                     (current-output-port p))
                   (handler req)))))))))
 
 ;; (websocket-protocol-set! "base64" base64-read base64-write)

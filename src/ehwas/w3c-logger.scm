@@ -151,12 +151,15 @@ end-format-time
      `(,(datetime) " "
        ,(address->string (socket-info-address (tcp-client-peer-socket-info (current-http-port)))) " "
        ,(request-method req) " "
-       ,(table-ref (request-header req) 'Host "-") " "
+       ,(let(
+	     (host (assoc 'Host (request-header req))))
+	  (if host (cdr host) "-")) 
+       " "
        ,(request-uri-string req) " "
        ,(response-code res) " "
        "\"" ,(response-status res) "\" "
        ,(let(
-	     (len (assoc "Content-length" (response-header res))))
+	     (len (assoc 'Content-Length (response-header res))))
 	  (if len (cdr len) "-"))
        " \n"))))
 

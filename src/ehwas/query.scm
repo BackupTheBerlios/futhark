@@ -364,11 +364,9 @@
 (define (make-request-query request)
   (let(
        (mtd (request-method request))
-       (ats (split-attributes
-             (table-ref
-              (request-header request)
-              'Content-Type
-              ""))))
+       (ats (let(
+		 (ct (assoc 'Content-type (request-header request))))
+	      (if ct (split-attributes (cdr ct)) '()))))
     (cond
      ((eq? mtd 'GET)
       (url-decode (uri-query (request-uri request))))
@@ -381,7 +379,9 @@
      ((and (eq? mtd 'POST)
            (string=? (car ats) "application/x-www-form-urlencoded"))
       (let(
-           (s (make-string (min (string->number (table-ref (request-header request) 'Content-Length "0"))
+           (s (make-string (min (let(
+				     (len (assoc 'Content-length (request-header request))))
+				  (if len (string->number len) 0))
                                 (ehwas-query-max-file-length)))))
         (read-substring s 0 (string-length s))
         (url-decode s)))

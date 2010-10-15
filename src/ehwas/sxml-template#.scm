@@ -1,4 +1,14 @@
-(##namespace ("ehwas-sxml-template#" sgml-template html-template xml-template svg-template xhtml-template))
+(##namespace ("ehwas-sxml-template#"
+	      sgml-template
+	      html-template
+	      xml-template
+	      svg-template
+	      xhtml-template
+	      html
+	      xml
+	      svg
+	      xhtml
+	      ))
 
 (define-macro (sgml-template #!key (empty '()) . e)
   (list
@@ -69,5 +79,17 @@
 (define-macro (svg-template . e)
   `(xml-template ,@e))
 
-(define-macro (xhtml-template e)
+(define-macro (xhtml-template . e)
   `(xml-template ,@e))
+
+(define-macro (html . e)
+  `(print (html-template ,@e)))
+
+(define-macro (xml . e)
+  `(print (xml-template ,@e)))
+
+(define-macro (svg . e)
+  `(print (svg-template ,@e)))
+
+(define-macro (xhtml . e)
+  `(print (xhtml-template ,@e)))

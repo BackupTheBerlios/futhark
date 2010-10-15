@@ -33,7 +33,9 @@
          (res (resolver req)))
       (if (not (response? res)) #f
           (let*(
-                (accepted (split (table-ref (request-header req) 'Accept-Encoding "")))
+                (accepted (let(
+			       (aenc (assq 'Accept-Encoding (request-header req))))
+			    (if aenc (split (cdr aenc)) '())))
                 (code (response-code res))
                 (status (response-status res))
                 (headers (response-header res)))
@@ -68,9 +70,11 @@
 
 (define (can-compress req)
   (let(
-       (accepted (split (table-ref (request-header req) 'Accept-Encoding ""))))
+       (accepted (let(
+		      (aenc (assq 'Accept-Encoding (request-header req))))
+		   (if aenc (split (cdr aenc)) '()))))
     (or (member "gzip" accepted)
-        (member "deflate" accepted))))
+	(member "deflate" accepted))))
 
 (define (cached-compress res)
   (orelse

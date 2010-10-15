@@ -356,24 +356,24 @@
    (json-read (current-input-port) json->pid))
   (json-response req #t))
 
-(define (gebo-options req)
-  (response
-   (request-version req) 200 "OK"
-   (header
-    Access-Control-Allow-Origin: (table-ref (request-header req) "Origin" "")
-    Access-Control-Allow-Methods: "POST, GET, OPTIONS"
-    Access-Control-Allow-Headers: (table-ref (request-header req) "Access-Control-Request-Headers" "")
-    Access-Control-Max-Age: 1728000
-    Vary: "Accept-Encoding"
-    Content-Length: 0)
-   ""))
+;; (define (gebo-options req)
+;;   (response
+;;    (request-version req) 200 "OK"
+;;    (header
+;;     Access-Control-Allow-Origin: (table-ref (request-header req) "Origin" "")
+;;     Access-Control-Allow-Methods: "POST, GET, OPTIONS"
+;;     Access-Control-Allow-Headers: (table-ref (request-header req) "Access-Control-Request-Headers" "")
+;;     Access-Control-Max-Age: 1728000
+;;     Vary: "Accept-Encoding"
+;;     Content-Length: 0)
+;;    ""))
 
 (define (gebo-resolver req)
   (let(
        (path (request-path req)))
     (cond
-     ((eq? (request-method req) 'OPTIONS)
-      (gebo-options req))
+     ;; ((eq? (request-method req) 'OPTIONS)
+     ;;  (gebo-options req))
      
      ((equal? path '(gebo uid))
       (gebo-uid req))

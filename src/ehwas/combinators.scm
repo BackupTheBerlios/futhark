@@ -66,24 +66,23 @@
 		(etag (number->string
 		       (time->seconds
 			(file-last-modification-time path))))
-		(if-none-match (table-ref (request-header request) 'If-None-Match #f)))
-	     (if (equal? etag if-none-match)
-		 (make-response 304 "Not Modified" (header) (lambda () 'ok))
-		 (make-response
+		(if-none-match (assq 'If-None-Match (request-header request))))
+	     (if (and if-none-match (equal? etag (cdr if-none-match)))
+		 (response 304 "Not Modified" (header) 'nothing)
+		 (response
 		  200 "OK"
 		  (header
 		   Content-type: (mime-type path)
 		   Content-length: size
 		   Etag: etag)
-		  (lambda ()
-		    (call-with-input-file path
-		      (lambda (port)
-			(let buffer-write ((j 0))
-			  (if (< j size)
-			      (let(
-				   (delta (read-subu8vector buffer 0 buffer-size port)))
+		  (call-with-input-file path
+		    (lambda (port)
+		      (let buffer-write ((j 0))
+			(if (< j size)
+			    (let(
+				 (delta (read-subu8vector buffer 0 buffer-size port)))
 				(write-subu8vector buffer 0 delta)
-				(buffer-write (+ j delta)))))))))))))))
+				(buffer-write (+ j delta))))))))))))))
 
 (define (with-table table)
   (lambda (request)
@@ -140,13 +139,17 @@
 (define (post? request)
   (eq? (request-method request) 'POST))
 
+(define (redir to)
+  (response
+   302 "Found"
+   (header 
+    Location: to
+    Content-type: "text/plain")
+   'nothing))
+
 (define (redirect to)
-  (lambda (request)
-    (make-response
-     302 "Found"
-     (header Location: to Content-type: "text/plain")
-     (lambda () 'ok))))
-     
+  (lambda (req) (redir to)))
+   
 (define (catch-exception exception-handler handler)
   (lambda (request)
     (with-exception-catcher
@@ -156,17 +159,3 @@
 ;; move somewhere else
 ;; (include "../encode/base64#.scm")
 ;; (include "mime-types#.scm")
-
-(define-macro (base64-inline fn)
-  (include "../encode/base64#.scm")
-  (with-excetion-catcher
-   (lambda (ex) 'ignore)
-   (lambda () (load "../encode/base64")))
-  (if (and (file-exists? fn)
-           (eq? (file-type fn) 'regular))
-      (call-with-input-file fn
-        (lambda (in-port)
-          (let(
-               (data (make-u8vector (file-size fn))))
-            (read-subu8vector data 0 (u8vector-length data) in-port)
-            (string-append "data:" (mime-type fn) ";base64," (u8vector->base64-string data)))))))
