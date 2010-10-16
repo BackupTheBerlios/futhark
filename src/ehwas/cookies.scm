@@ -86,15 +86,44 @@
     (if (null? l) i
         (fold (f i (car l)) (cdr l)))))
 
-(define (set-cookie! response k v . avs)
-  ;; todo what if Set-cookie already present?
-  (response-header-set!
-   `((Set-cookie . ,(fold-left (lambda (p av)
-				 (cond
-				  ((pair? av)
-				   (string-append p ";" (car av) "=" (cdr av)))
-				  (else
-				   (string-append p av ";"))))
-			       (string-append k "=" v)
-			       avs))
-     ,@(response-header response))))
+;; (define (set-cookie! response k v . avs)
+;;   ;; todo what if Set-cookie already present?
+;;   (response-header-set!
+;;    `((Set-cookie . ,(fold-left (lambda (p av)
+;; 				 (cond
+;; 				  ((pair? av)
+;; 				   (string-append p ";" (car av) "=" (cdr av)))
+;; 				  (else
+;; 				   (string-append p av ";"))))
+;; 			       (string-append k "=" v)
+;; 			       avs))
+;;      ,@(response-header response))))
+
+(define (response-cookie-set response k v . avs)
+  (make-response
+   (response-code res)
+   (response-status res)
+   (set-cookie header k v avs)
+   (response-writer res)))
+
+(define (set-cookie header k v avs)
+  (let set ((header header) (rs '()))
+    (cond
+     ((null? header)
+      (reverse `((Set-cookie . ,(cookie-value k v avs)) ,@rs)))
+     ((eq? (caar header) 'Set-cookie)
+      (append (reverse (cons `((Set-cookie . ,(string-append (cookie-value k v avs) "; " (cdar header))) rs)))
+	      (cdr header)))
+     (else
+      (set (cdr header) (cons (car header) res))))))
+
+(define (cookie-value k v avs)
+  (fold-left (lambda (p av)
+	       (cond
+		((pair? av)
+		 (string-append p ";" (car av) "=" (cdr av)))
+		(else
+		 (string-append p av ";"))))
+	     (string-append k "=" v)
+	     avs))
+   

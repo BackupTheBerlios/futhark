@@ -74,5 +74,20 @@
         (table-set! *-memo-* request session)
         session)))
 
-    
-        
+(define session (make-parameter #f))
+
+(define (with-session handler)
+  (lambda (req)
+    (let*(
+	  (cookies (request-cookies req))
+	  (session-id0 (and cookies (table-ref cookies 'Session-id #f))))
+      (if session-id0
+	  (let(
+	       (sess (request-session req)))
+	    (parameterize 
+	     ((session sess))
+	     (let(
+		  (res (handler req)))
+	       (if (not (equal? (session-identifier sess) session-id0))
+		   (response-cookie-set res 'Session-id (session-id sess))
+		   res))))))))
