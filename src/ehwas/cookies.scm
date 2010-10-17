@@ -103,7 +103,7 @@
   (make-response
    (response-code res)
    (response-status res)
-   (set-cookie header k v avs)
+   (set-cookie (response-header response) k v avs)
    (response-writer res)))
 
 (define (set-cookie header k v avs)
