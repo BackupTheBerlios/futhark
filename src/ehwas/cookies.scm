@@ -110,14 +110,14 @@
   (let set ((header header) (rs '()))
     (cond
      ((null? header)
-      (reverse `((Set-cookie . ,(cookie-value k v avs)) ,@rs)))
+      (reverse `((Set-cookie . ,(cookie-val k v avs)) ,@rs)))
      ((eq? (caar header) 'Set-cookie)
-      (append (reverse (cons `((Set-cookie . ,(string-append (cookie-value k v avs) "; " (cdar header))) rs)))
+      (append (reverse (cons `((Set-cookie . ,(string-append (cookie-val k v avs) "; " (cdar header))) rs)))
 	      (cdr header)))
      (else
       (set (cdr header) (cons (car header) res))))))
 
-(define (cookie-value k v avs)
+(define (cookie-val k v avs)
   (fold-left (lambda (p av)
 	       (cond
 		((pair? av)
@@ -126,4 +126,4 @@
 		 (string-append p av ";"))))
 	     (string-append k "=" v)
 	     avs))
-   
+

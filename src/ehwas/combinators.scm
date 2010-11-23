@@ -117,13 +117,13 @@
   (cond
    ((null? prefix) path)
    ((null? path) #f)
-   ((eq? (car prefix) (car path) (strip-path-prefix (cdr path) (cdr prefix))))
+   ((eq? (car prefix) (car path)) (strip-path-prefix (cdr path) (cdr prefix)))
    (else #f)))
 
 (define (with-prefix prefix handler)
   (lambda (request)
     (and prefix
-         (handler (request-with-new-path (strip-path-prefix (request-path request) prefix))))))
+         (handler (request-with-new-path request (strip-path-prefix (request-path request) prefix))))))
 
 (define (allow test? handler)
   (lambda (request)
