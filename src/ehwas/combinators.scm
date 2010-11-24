@@ -28,27 +28,27 @@
 
 (define (cache handler)
   (let(
-       (*cache* (make-table weak-values: #t test: equal?)))
+       (*cache* (make-table weak-keys: #t test: equal?)))
     (lambda (req)
-      (with-exception-catcher pp (lambda () 
       (let(
            (key (request-uri-string req)))
         (or (table-ref *cache* key #f)
             (let(
                  (res (handler req)))
-              (if (and (response? res) (equal? (response-code res) 200))
+              (if (and (response? res) (eq? (response-code res) 200))
                   (let*(
                         (data (with-output-to-u8vector
 			       (u8vector)
 			       (response-writer res)))
 			(res (make-response
 			      200 "OK" 
-			      `(("Content-length" . ,(u8vector-length data)) ,@(response-header res))
-			      (lambda () (write-subu8vector data 0 (u8vector-length data))))))
+			      `((Content-length . ,(u8vector-length data)) ,@(response-header res))
+			      (lambda ()
+				(write-subu8vector data 0 (u8vector-length data))))))
                     (table-set! *cache* key res)
                     res)
                   res)))))))
-))
+
 (define (regular-file? f)
   (and (file-exists? f)
        (eq? (file-type f) 'regular)))
@@ -107,10 +107,11 @@
   (lambda (request)
     (let(
          (reverse-path (reverse (request-path request))))
-      (and (pair? reverse-path)
-           (string=? (car reverse-path) "")
-           (handler
-            (request-with-new-path request (reverse (cons file (cdr reverse-path)))))))))
+      (if (and (pair? reverse-path)
+	       (eq? (car reverse-path) '||))
+	  (handler
+	   (request-with-new-path request (reverse (cons file (cdr reverse-path)))))
+	  (handler request)))))
 
 
 (define (strip-path-prefix path prefix)

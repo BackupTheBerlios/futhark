@@ -12,4 +12,5 @@
   request-path
   ;; request-fragment
   make-request
+  request?
   ))

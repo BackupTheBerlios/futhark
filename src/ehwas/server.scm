@@ -26,9 +26,11 @@
 			  ((response-version (request-version req)))
 			  (let*(
 				(res (handler req))
-				(con-req (assoc 'Connection (request-header req)))
+				(con-req (and (request? req) (assoc 'Connection (request-header req))))
 				(con-res (and (response? res) (assoc 'Connection (response-header res)))))
 			    (if (response? res) (write-http-response res))
+			
+			    (force-output)
 			    (if (and (equal? (request-version req) '(1 . 1))
 				     (and con-req (equal? (cdr con-req) "Keep-Alive"))
 				     (not (and con-res (equal? (cdr con-res) "Close"))))
