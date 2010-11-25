@@ -11,10 +11,14 @@
   session-ref
   
   ;; ehwas-sessions-enduser#
-  sess
+  ;; sess
+  ;; session
+  ;; with-session
+  request-session
+  request-session-set!
+  request-session-ref
   session
   with-session
-  ;; request-session
   ))
 
      

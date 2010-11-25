@@ -62,7 +62,7 @@
   (<- nam (key))
   (spaces) (char #\=) (spaces)
   (<- val (value))
-  (return (cons nam val)))
+  (return (cons (string->symbol nam) val)))
 
 (define (string->cookie s)
   (run (cookie) s))
@@ -101,10 +101,10 @@
 
 (define (response-cookie-set response k v . avs)
   (make-response
-   (response-code res)
-   (response-status res)
+   (response-code response)
+   (response-status response)
    (set-cookie (response-header response) k v avs)
-   (response-writer res)))
+   (response-writer response)))
 
 (define (set-cookie header k v avs)
   (let set ((header header) (rs '()))
@@ -115,15 +115,15 @@
       (append (reverse (cons `((Set-cookie . ,(string-append (cookie-val k v avs) "; " (cdar header))) rs)))
 	      (cdr header)))
      (else
-      (set (cdr header) (cons (car header) res))))))
+      (set (cdr header) (cons (car header) rs))))))
 
 (define (cookie-val k v avs)
   (fold-left (lambda (p av)
 	       (cond
 		((pair? av)
-		 (string-append p ";" (car av) "=" (cdr av)))
+		 (string-append p ";" (symbol->string (car av)) "=" (cdr av)))
 		(else
-		 (string-append p av ";"))))
-	     (string-append k "=" v)
+		 (string-append p (symbol->string av) ";"))))
+	     (string-append (symbol->string k) "=" v)
 	     avs))
 

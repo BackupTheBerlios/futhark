@@ -240,13 +240,21 @@
 
 (include "../ansuz/sources/port#.scm")
 
+;; (define-parser (rfc822+)
+;;   (<- h (rfc822))
+;;   (return
+;;    (let(
+;;         (t1 (make-table)))
+;;      (table-for-each (lambda (k v) (table-set! t1 k (split-attributes v))) h)
+;;      t1)))
+
 (define-parser (rfc822+)
   (<- h (rfc822))
   (return
-   (let(
-        (t1 (make-table)))
-     (table-for-each (lambda (k v) (table-set! t1 k (split-attributes v))) h)
-     t1)))
+   (map (lambda (kv)
+	  (cons (car kv) (split-attributes (cdr kv))))
+	h)))
+
 
 ;; (define-parser (dataencoded-text-value boundary)
 ;;   (reflect (head tail row col pos datum sc fl)
@@ -310,12 +318,12 @@
 (define-parser (dataencoded-pair b)
   (<- h (rfc822+))
   (let*(
-        (cd (table-ref h 'Content-Disposition #f)) ;; (assoc "Content-Disposition" h))
+        (cd (assoc 'Content-Disposition h)) ;; (assoc "Content-Disposition" h))
         (as (cdr cd))
-        (name (string->symbol (cdr (assoc "name" as)))))
+        (name (string->symbol (cdr (assoc "name" (cdr as))))))
     (>> (<- c (dataencoded-value b))
         (return (cons name
-                      (if (assoc "filename" as)
+                      (if (assoc "filename" (cdr as))
                           c
                           (call-with-input-u8vector c (lambda (p) (read-line p #f)))))))))
 
@@ -365,7 +373,7 @@
   (let(
        (mtd (request-method request))
        (ats (let(
-		 (ct (assoc 'Content-type (request-header request))))
+		 (ct (assoc 'Content-Type (request-header request))))
 	      (if ct (split-attributes (cdr ct)) '()))))
     (cond
      ((eq? mtd 'GET)

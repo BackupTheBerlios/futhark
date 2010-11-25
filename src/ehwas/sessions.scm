@@ -2,6 +2,7 @@
 
 (##include "~~/lib/gambit#.scm")
 (include "cookies#.scm")
+(include "response#.scm")
 
 (declare (standard-bindings)
          (extended-bindings)
@@ -96,19 +97,23 @@
   (lambda (req)
     (let*(
 	  (cookies (request-cookies req))
-	  (session-id0 (and cookies (table-ref cookies 'Session-id #f))))
-      (if session-id0
-	  (let*(
-		(sess (request-session req))
-		(res (thunk req sess)))
-	    (if (not (equal? (session-identifier sess) session-id0))
-		(response-cookie-set res 'Session-id (session-id sess))
-		res))))))
+	  (session-id0 (and cookies (table-ref cookies 'Session-id #f)))
+	  (ses (request-session req))
+	  (res (thunk req ses)))
+      (if (and (response? res) (not (equal? (session-identifier ses) session-id0)))
+	  (response-cookie-set res 'Session-id (session-identifier ses))
+	  res))))
 
 (define session (make-parameter #f))
 
 (define (with-session handler)
-  (sess (lambda (req sess)
+  (sess (lambda (req ses)
 	  (parameterize 
-	   ((session sess))
+	   ((session ses))
 	   (handler req)))))
+
+(define (request-session-set! req k v)
+  (session-set! (request-session req) k v))
+
+(define (request-session-ref req k)
+  (session-ref (request-session req) k))
