@@ -123,8 +123,10 @@
 
 (define (with-prefix prefix handler)
   (lambda (request)
-    (and prefix
-         (handler (request-with-new-path request (strip-path-prefix (request-path request) prefix))))))
+    (let(
+	 (path1 (strip-path-prefix (request-path request) prefix)))
+      (and path1
+	   (handler (request-with-new-path request path1))))))
 
 (define (allow test? handler)
   (lambda (request)
